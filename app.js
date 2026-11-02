@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.3.1";
+  var VERSION = "1.3.2";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -19,7 +19,8 @@
     var oscuro = PREF.tema === "oscuro" || (PREF.tema === "auto" && mq && mq.matches);
     document.documentElement.setAttribute("data-t", oscuro ? "dark" : "light");
   }
-  aplicarTema();
+  function aplicarPantalla() { document.documentElement.classList.toggle("dock", PREF.dock === true); }
+  aplicarTema(); aplicarPantalla();
   if (mq && mq.addEventListener) mq.addEventListener("change", aplicarTema);
   function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} return null; }
   var MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Setiembre", "Octubre", "Noviembre", "Diciembre"];
@@ -543,6 +544,9 @@
     h += '<div class="card"><div class="lbl">Apariencia</div><div class="seg" style="margin-top:8px">' +
       [["auto", "Automático"], ["claro", "Claro"], ["oscuro", "Oscuro"]].map(function (o) { return '<button class="' + (PREF.tema === o[0] ? "on" : "") + '" data-a="tema" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
       '</div><p class="hint" style="margin-top:6px">«Automático» sigue el modo claro u oscuro de tu iPhone.</p></div>';
+    h += '<div class="card"><div class="lbl">Barra inferior</div><div class="seg" style="margin-top:8px">' +
+      [[false, "Flotante"], [true, "Pegada abajo"]].map(function (o) { return '<button class="' + ((PREF.dock === true) === o[0] ? "on" : "") + '" data-a="dock" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
+      '</div><p class="hint" style="margin-top:6px">Si ves una franja vacía bajo la barra, prueba «Pegada abajo».</p></div>';
     h += '<div class="card"><div class="lbl">Privacidad y seguridad</div>' +
       '<button class="cb' + (PREF.oculto ? " on" : "") + '" data-a="ojo" style="margin-top:4px"><span class="box">' + (PREF.oculto ? "✓" : "") + '</span><span style="flex:1">Ocultar los montos (también con el ojo del encabezado)</span></button>' +
       (PREF.lock && !cfg.demo ?
@@ -674,6 +678,7 @@
     mesI: function (v) { S.IN.mes = mesMover(S.IN.mes, +v); render(); cargarInformes(); },
     cambiarPin: function () { cfg = { url: cfg.url, pin: "" }; store("mg_cfg", null); S.setupMsg = "Escribe el PIN nuevo."; render(); },
     salir: function () { cfg = null; S.estado = null; S.G.data = null; store("mg_cfg", null); store("mg_estado", null); S.setupMsg = ""; S.tab = "inicio"; S.sub = null; render(); },
+    dock: function (v) { PREF.dock = (v === "true"); guardarPref(); aplicarPantalla(); render(); },
     ojo: function () { PREF.oculto = !PREF.oculto; guardarPref(); render(); },
     tema: function (v) { PREF.tema = v; guardarPref(); aplicarTema(); render(); },
     enviarCola: function () { enviarCola(true); },
