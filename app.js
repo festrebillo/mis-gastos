@@ -2,16 +2,19 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.5";
+  var VERSION = "1.5.1";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   var PREF = store("mg_pref") || {};
-  PREF.tema = PREF.tema || "auto"; PREF.ocultarAlAbrir = PREF.ocultarAlAbrir === true; delete PREF.oculto;
+  PREF.tema = PREF.tema || "auto"; PREF.ocultarAlAbrir = PREF.ocultarAlAbrir === true; delete PREF.oculto; delete PREF.dock;
   function guardarPref() { store("mg_pref", PREF); }
   var PUNTOS = "••••••";
   function money(n) { return "S/ " + (S.ocultoTodo ? PUNTOS : Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })); }
+  function fmt2(n) { return Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function moneyRaw(n) { return "S/ " + fmt2(n); }
+  function bigRaw(n) { return '<sm>S/</sm>' + fmt2(n); }
   function bigMoney(n) { return '<sm>S/</sm>' + (S.ocultoTodo ? PUNTOS : Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })); }
   function nf(n) { return S.ocultoTodo ? "••" : Number(n || 0).toLocaleString("en-US"); }
   var mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
@@ -19,7 +22,7 @@
     var oscuro = PREF.tema === "oscuro" || (PREF.tema === "auto" && mq && mq.matches);
     document.documentElement.setAttribute("data-t", oscuro ? "dark" : "light");
   }
-  function aplicarPantalla() { document.documentElement.classList.toggle("dock", PREF.dock !== false); }
+  function aplicarPantalla() { document.documentElement.classList.toggle("dock", PREF.flotante !== true); }
   aplicarTema(); aplicarPantalla();
   if (mq && mq.addEventListener) mq.addEventListener("change", aplicarTema);
   function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} return null; }
@@ -64,10 +67,10 @@
 
   S.ver = { ahorro: false, deuda: false };
   S.ocultoTodo = PREF.ocultarAlAbrir === true;      // por defecto solo «Ahorro» y «Deuda» arrancan ocultos; lo demás se ve
-  function todoVisible() { return !S.ocultoTodo && S.ver.ahorro && S.ver.deuda; }            // los montos grandes arrancan ocultos cada vez que abres la app
-  function visK(k) { return S.ver[k] === true && !S.ocultoTodo; }
-  function mk(n, k) { return visK(k) ? money(n) : "S/ " + PUNTOS; }
-  function bigK(n, k) { return '<sm>S/</sm>' + (visK(k) ? Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : PUNTOS); }
+              // los montos grandes arrancan ocultos cada vez que abres la app
+  function visK(k) { return S.ver[k] === true; }              // «Ahorro» y «Deuda» solo dependen de su propio ojito
+  function mk(n, k) { return visK(k) ? moneyRaw(n) : "S/ " + PUNTOS; }
+  function bigK(n, k) { return visK(k) ? bigRaw(n) : '<sm>S/</sm>' + PUNTOS; }
   function ojoK(k, claro) { return '<button class="eye' + (claro ? " w" : "") + '" data-a="ver" data-v="' + k + '" aria-label="Mostrar u ocultar">' + (visK(k) ? I.eye : I.eyeoff) + '</button>'; }
 
   /* ---------- conexión ---------- */
@@ -117,11 +120,11 @@
     contarNumeros();
   }
   function contarNumeros() {
-    if (S.ocultoTodo || reducido()) return;
+    if (reducido()) return;
     Array.prototype.forEach.call(document.querySelectorAll("[data-n]"), function (e) {
       var fin = parseFloat(e.getAttribute("data-n")); if (!isFinite(fin)) return;
       var t0 = performance.now(), dur = 850;
-      (function f(t) { var k = Math.min(1, (t - t0) / dur), v = fin * (1 - Math.pow(1 - k, 3)); e.innerHTML = bigMoney(v); if (k < 1) requestAnimationFrame(f); })(t0);
+      (function f(t) { var k = Math.min(1, (t - t0) / dur), v = fin * (1 - Math.pow(1 - k, 3)); e.innerHTML = bigRaw(v); if (k < 1) requestAnimationFrame(f); })(t0);
     });
   }
   function skel(n) { var h = ""; for (var i = 0; i < (n || 3); i++) h += '<div class="sk" style="height:' + (i === 0 ? 132 : 104) + 'px"></div>'; return h; }
@@ -134,7 +137,7 @@
   }
   var refreshBtn = '<button class="ic" data-a="refrescar" aria-label="Actualizar">' + I.refresh + '</button>';
   function accionesHdr() {
-    return '<div style="display:flex;gap:8px"><button class="ic" data-a="ojo" aria-label="Mostrar u ocultar montos">' + (todoVisible() ? I.eye : I.eyeoff) + '</button>' + refreshBtn + '</div>';
+    return '<div style="display:flex;gap:8px"><button class="ic" data-a="ojo" aria-label="Mostrar u ocultar montos">' + (S.ocultoTodo ? I.eyeoff : I.eye) + '</button>' + refreshBtn + '</div>';
   }
 
   function render() {
@@ -194,7 +197,7 @@
     var h = bannerCola() + (S.offline ? '<div class="hint" style="text-align:center">📴 Sin conexión · mostrando tus últimos datos guardados</div>' : ""), pill;
     if (E.banco === null) pill = '<span class="pill w">Escribe el saldo de tu banco en «Tarjeta» para comprobar</span>';
     else if (Math.abs(E.diferencia) < 0.005) pill = '<span class="pill">✔ Cuadra con tu banco</span>';
-    else pill = '<span class="pill w">⚠ Difiere ' + money(Math.abs(E.diferencia)) + ' con tu banco</span>';
+    else pill = '<span class="pill w">⚠ Difiere ' + mk(Math.abs(E.diferencia), 'ahorro') + ' con tu banco</span>';
     h += '<div class="card"><div class="rowh"><span class="lbl">Ahorro disponible hoy</span>' + ojoK("ahorro") + '</div><div class="big"' + (visK("ahorro") ? ' data-n="' + E.ahorro + '"' : "") + '>' + bigK(E.ahorro, "ahorro") + '</div>' + pill +
       (E.reserva > 0 ? '<div class="kv" style="margin-top:8px"><span>🔒 Reservado para fijos</span><b>' + mk(E.reserva, "ahorro") + '</b></div>' : "") + '</div>';
     var t = E.tarjeta;
@@ -588,10 +591,10 @@
       [["auto", "Automático"], ["claro", "Claro"], ["oscuro", "Oscuro"]].map(function (o) { return '<button class="' + (PREF.tema === o[0] ? "on" : "") + '" data-a="tema" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
       '</div><p class="hint" style="margin-top:6px">«Automático» sigue el modo claro u oscuro de tu iPhone.</p></div>';
     h += '<div class="card"><div class="lbl">Barra inferior</div><div class="seg" style="margin-top:8px">' +
-      [[false, "Flotante"], [true, "Pegada abajo"]].map(function (o) { return '<button class="' + ((PREF.dock !== false) === o[0] ? "on" : "") + '" data-a="dock" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
-      '</div><p class="hint" style="margin-top:6px">Si ves una franja vacía bajo la barra, prueba «Pegada abajo».</p></div>';
+      [[false, "Pegada abajo"], [true, "Flotante"]].map(function (o) { return '<button class="' + ((PREF.flotante === true) === o[0] ? "on" : "") + '" data-a="barra" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
+      '</div><p class="hint" style="margin-top:6px">«Pegada abajo» es lo recomendado: no deja ninguna franja bajo la barra.</p></div>';
     h += '<div class="card"><div class="lbl">Privacidad y seguridad</div>' +
-      '<button class="cb' + (PREF.ocultarAlAbrir ? " on" : "") + '" data-a="ocultarInicio" style="margin-top:4px"><span class="box">' + (PREF.ocultarAlAbrir ? "✓" : "") + '</span><span style="flex:1">Ocultar TODOS los montos al abrir la app (el ojo de arriba los muestra u oculta)</span></button>' +
+      '<button class="cb' + (PREF.ocultarAlAbrir ? " on" : "") + '" data-a="ocultarInicio" style="margin-top:4px"><span class="box">' + (PREF.ocultarAlAbrir ? "✓" : "") + '</span><span style="flex:1">Ocultar los montos al abrir (el ojo de arriba; «Ahorro» y «Deuda» siempre abren ocultos)</span></button>' +
       (PREF.lock && !cfg.demo ?
         '<div class="kv"><span>🔒 Candado activado</span><b>' + PREF.lock.len + ' dígitos</b></div><label class="l" style="margin-top:8px">Pedir el código</label><div class="mset">' +
         [[0, "Siempre"], [1, "Tras 1 min"], [5, "Tras 5 min"]].map(function (o) { return '<button class="' + (PREF.lock.min === o[0] ? "on" : "") + '" data-a="lockMin" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
@@ -721,16 +724,11 @@
     mesI: function (v) { S.IN.mes = mesMover(S.IN.mes, +v); render(); cargarInformes(); },
     cambiarPin: function () { cfg = { url: cfg.url, pin: "" }; store("mg_cfg", null); S.setupMsg = "Escribe el PIN nuevo."; render(); },
     salir: function () { cfg = null; S.estado = null; S.G.data = null; store("mg_cfg", null); store("mg_estado", null); S.setupMsg = ""; S.tab = "inicio"; S.sub = null; render(); },
-    dock: function (v) { PREF.dock = (v === "true"); guardarPref(); aplicarPantalla(); render(); },
+    barra: function (v) { PREF.flotante = (v === "true"); guardarPref(); aplicarPantalla(); render(); },
     ver: function (k) {
-      if (S.ocultoTodo) { toast("Usa el ojo de arriba para mostrar los montos"); return; }
       S.ver[k] = !S.ver[k]; render(); if (visK(k)) contarNumeros();
     },
-    ojo: function () {
-      if (todoVisible()) { S.ocultoTodo = true; S.ver.ahorro = false; S.ver.deuda = false; }
-      else { S.ocultoTodo = false; S.ver.ahorro = true; S.ver.deuda = true; }
-      render(); if (todoVisible()) contarNumeros();
-    },
+    ojo: function () { S.ocultoTodo = !S.ocultoTodo; render(); },     // muestra u oculta todos los montos MENOS «Ahorro» y «Deuda»
     ocultarInicio: function () { PREF.ocultarAlAbrir = !PREF.ocultarAlAbrir; guardarPref(); render(); },
     tema: function (v) { PREF.tema = v; guardarPref(); aplicarTema(); render(); },
     enviarCola: function () { enviarCola(true); },
@@ -832,9 +830,9 @@
   if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) navigator.serviceWorker.register("sw.js").catch(function () {});
   var vis = Date.now(), oculta = 0;
   document.addEventListener("visibilitychange", function () {
-    if (document.hidden) { oculta = Date.now(); vis = Date.now(); return; }
+    if (document.hidden) { oculta = Date.now(); vis = Date.now(); S.ver.ahorro = false; S.ver.deuda = false; return; }
     if (PREF.lock && cfg && !cfg.demo && !S.locked && oculta && Date.now() - oculta >= PREF.lock.min * 60000) { S.locked = true; S.lockIn = ""; S.lockMsg = ""; render(); }
-    if (cfg && !S.locked) { enviarCola(false); if (Date.now() - vis > 60000) { vis = Date.now(); cargarEstado(true); if (S.tab === "gastos") cargarGastos(); } }
+    if (cfg && !S.locked) { render(); enviarCola(false); if (Date.now() - vis > 60000) { vis = Date.now(); cargarEstado(true); if (S.tab === "gastos") cargarGastos(); } }
   });
   window.addEventListener("online", function () { enviarCola(false); cargarEstado(true); });
   if (cfg && !cfg.demo && PREF.lock) { S.locked = true; S.lockIn = ""; }

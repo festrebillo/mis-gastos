@@ -65,6 +65,11 @@ La app se actualiza sola al volver a abrirla con internet. Si cambias el script,
 - **Comparación entre meses** (Informes): total del mes contra el anterior y, por categoría, barra azul (este mes) contra barra gris (mes anterior) con ▲/▼ y la diferencia. Cambia de mes con las flechas.
 - **Barra inferior pegada al borde**, de color sólido, para que no quede ninguna franja distinta debajo.
 
+## Ajuste v1.5.1
+- **Ahorro disponible y Deuda de la tarjeta son independientes:** cada uno tiene su ojito, **siempre abren ocultos** (y vuelven a ocultarse al salir de la app) y el ojo del encabezado NO los toca.
+- **El ojo del encabezado** muestra u oculta **todos los demás** montos de todas las pantallas. Al abrir la app esos montos se ven.
+- **Barra inferior pegada** siempre por defecto (se ignora la opción guardada de versiones anteriores); en Ajustes se puede elegir «Flotante».
+
 ## Límites conocidos
 - Editar, borrar, pagar fijos y actualizar la tarjeta necesitan internet (solo registrar gasto/ingreso funciona sin conexión).
 - Las notificaciones push de iPhone solo existen para páginas agregadas a la pantalla de inicio y no están incluidas en esta versión.
