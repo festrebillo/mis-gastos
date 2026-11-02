@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.3";
+  var VERSION = "1.3.1";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -527,6 +527,17 @@
     });
     return '<div class="sec"><span>En qué gastaste</span></div><div class="card"><div class="dwrap"><svg viewBox="0 0 140 140" class="donut" role="img" aria-label="Gasto por categoría"><circle cx="70" cy="70" r="52" fill="none" stroke="var(--track)" stroke-width="16"/>' + segs + '</svg><div class="dc"><span>Gastos</span><b>' + money(tot) + '</b></div></div>' + leg + '</div>';
   }
+  function diagnostico() {
+    var sonda = document.createElement("div");
+    sonda.style.cssText = "position:fixed;visibility:hidden;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)";
+    document.body.appendChild(sonda); var cs = getComputedStyle(sonda), sat = cs.paddingTop, sab = cs.paddingBottom; document.body.removeChild(sonda);
+    var app = $("#app") ? $("#app").getBoundingClientRect() : null, vv = window.visualViewport;
+    var modo = (navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches)) ? "App de la pantalla de inicio" : "Navegador (Safari)";
+    return [["Se abrió como", modo], ["Ventana (ancho × alto)", innerWidth + " × " + innerHeight], ["Pantalla del equipo", screen.width + " × " + screen.height],
+      ["Área visible (visualViewport)", vv ? Math.round(vv.width) + " × " + Math.round(vv.height) + " · arriba " + Math.round(vv.offsetTop) : "—"],
+      ["Margen seguro arriba / abajo", sat + " / " + sab], ["La app ocupa", app ? "de " + Math.round(app.top) + " a " + Math.round(app.bottom) : "—"]]
+      .map(function (r) { return '<div class="kv"><span>' + r[0] + '</span><b>' + esc(r[1]) + '</b></div>'; }).join("");
+  }
   function vistaAjustes() {
     var E = S.estado, c = cola(), h = "";
     h += '<div class="card"><div class="lbl">Apariencia</div><div class="seg" style="margin-top:8px">' +
@@ -545,6 +556,7 @@
           (x.error ? '<button class="linkbtn" data-a="colaDescartar" data-v="' + esc(x.id) + '">Descartar</button>' : "") + '</div>';
       }).join("") + '</div>' + (c.some(function (x) { return !x.error; }) ? '<button class="btn" data-a="enviarCola">Enviar ahora</button>' : "");
     }
+    h += '<div class="card diag"><div class="lbl">Diagnóstico de pantalla</div>' + diagnostico() + '<p class="hint" style="margin-top:6px">Si la app no ocupa toda la pantalla, mándame una captura de esto.</p></div>';
     h += '<div class="card"><div class="kv"><span>Versión de la app</span><b>' + VERSION + '</b></div><div class="kv"><span>Versión del script</span><b>' + esc(E ? E.version : "—") + '</b></div><div class="kv"><span>Conexión</span><b>' + (cfg.demo ? "Demostración" : "Tu script de Google") + '</b></div></div>' +
       '<div class="card stack"><div class="lbl">Instalar en tu iPhone</div><p class="hint">En Safari toca Compartir (□↑) → «Agregar a pantalla de inicio». Ábrela desde el ícono y funciona a pantalla completa.</p></div>';
     h += cfg.demo ? '<button class="btn" data-a="salir">Salir de la demostración</button>' :
