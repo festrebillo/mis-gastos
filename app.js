@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.3.2";
+  var VERSION = "1.4";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -19,7 +19,7 @@
     var oscuro = PREF.tema === "oscuro" || (PREF.tema === "auto" && mq && mq.matches);
     document.documentElement.setAttribute("data-t", oscuro ? "dark" : "light");
   }
-  function aplicarPantalla() { document.documentElement.classList.toggle("dock", PREF.dock === true); }
+  function aplicarPantalla() { document.documentElement.classList.toggle("dock", PREF.dock !== false); }
   aplicarTema(); aplicarPantalla();
   if (mq && mq.addEventListener) mq.addEventListener("change", aplicarTema);
   function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} return null; }
@@ -61,6 +61,12 @@
     T: { cargando: false }, P: {}, FJ: { data: null, sel: {} }, IN: { mes: mesClave(new Date()), data: null }, lugares: []
   };
   function nuevoForm() { return { modo: "gasto", monto: "", lugar: "", cat: "", catAuto: true, metodo: "Saldo Disponible", detalle: "", desc: "", guardando: false }; }
+
+  S.ver = { ahorro: false, deuda: false };            // los montos grandes arrancan ocultos cada vez que abres la app
+  function visK(k) { return S.ver[k] === true && !PREF.oculto; }
+  function mk(n, k) { return visK(k) ? money(n) : "S/ " + PUNTOS; }
+  function bigK(n, k) { return '<sm>S/</sm>' + (visK(k) ? Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : PUNTOS); }
+  function ojoK(k, claro) { return '<button class="eye' + (claro ? " w" : "") + '" data-a="ver" data-v="' + k + '" aria-label="Mostrar u ocultar">' + (visK(k) ? I.eye : I.eyeoff) + '</button>'; }
 
   /* ---------- conexión ---------- */
   function call(body) {
@@ -106,6 +112,9 @@
   function animar() {
     Array.prototype.forEach.call(document.querySelectorAll("[data-w]"), function (e) { requestAnimationFrame(function () { requestAnimationFrame(function () { e.style.width = e.getAttribute("data-w") + "%"; }); }); });
     Array.prototype.forEach.call(document.querySelectorAll("[data-da]"), function (e) { requestAnimationFrame(function () { requestAnimationFrame(function () { e.style.strokeDasharray = e.getAttribute("data-da"); }); }); });
+    contarNumeros();
+  }
+  function contarNumeros() {
     if (PREF.oculto || reducido()) return;
     Array.prototype.forEach.call(document.querySelectorAll("[data-n]"), function (e) {
       var fin = parseFloat(e.getAttribute("data-n")); if (!isFinite(fin)) return;
@@ -167,12 +176,12 @@
     if (E.banco === null) pill = '<span class="pill w">Escribe el saldo de tu banco en «Tarjeta» para comprobar</span>';
     else if (Math.abs(E.diferencia) < 0.005) pill = '<span class="pill">✔ Cuadra con tu banco</span>';
     else pill = '<span class="pill w">⚠ Difiere ' + money(Math.abs(E.diferencia)) + ' con tu banco</span>';
-    h += '<div class="card"><div class="lbl">Ahorro disponible hoy</div><div class="big" data-n="' + E.ahorro + '">' + bigMoney(E.ahorro) + '</div>' + pill +
-      (E.reserva > 0 ? '<div class="kv" style="margin-top:8px"><span>🔒 Reservado para fijos</span><b>' + money(E.reserva) + '</b></div>' : "") + '</div>';
+    h += '<div class="card"><div class="rowh"><span class="lbl">Ahorro disponible hoy</span>' + ojoK("ahorro") + '</div><div class="big"' + (visK("ahorro") ? ' data-n="' + E.ahorro + '"' : "") + '>' + bigK(E.ahorro, "ahorro") + '</div>' + pill +
+      (E.reserva > 0 ? '<div class="kv" style="margin-top:8px"><span>🔒 Reservado para fijos</span><b>' + mk(E.reserva, "ahorro") + '</b></div>' : "") + '</div>';
     var t = E.tarjeta;
     if (t) {
-      h += '<div class="cc"><div class="lbl">Deuda de la tarjeta</div><div class="big" data-n="' + t.deuda + '">' + bigMoney(t.deuda) + '</div>' +
-        '<div class="two"><div>A pagar antes del ' + esc(t.limite ? fechaCorta(t.limite).slice(0, 5) : "—") + '<b>' + money(t.pendiente) + '</b></div>' +
+      h += '<div class="cc"><div class="rowh"><span class="lbl">Deuda de la tarjeta</span>' + ojoK("deuda", true) + '</div><div class="big"' + (visK("deuda") ? ' data-n="' + t.deuda + '"' : "") + '>' + bigK(t.deuda, "deuda") + '</div>' +
+        '<div class="two"><div>A pagar antes del ' + esc(t.limite ? fechaCorta(t.limite).slice(0, 5) : "—") + '<b>' + mk(t.pendiente, "deuda") + '</b></div>' +
         '<div>Quedan<b class="w">' + (t.diasLimite === null ? "—" : t.diasLimite + " días") + '</b></div></div></div>';
     }
     var pc = E.ingresos > 0 ? Math.min(100, Math.round(E.gastos / E.ingresos * 100)) : 0;
@@ -423,12 +432,12 @@
     if (!E) return skel(3);
     var t = E.tarjeta;
     if (t) {
-      h += '<div class="cc"><div class="lbl">Deuda real</div><div class="big" data-n="' + t.deuda + '">' + bigMoney(t.deuda) + '</div><div class="two"><div>Fecha límite (automática)<b>' + esc(fechaCorta(t.limite)) + '</b></div><div>Quedan<b class="w">' + (t.diasLimite === null ? "—" : t.diasLimite + " días") + '</b></div></div></div>';
-      h += '<div class="card"><div class="kv"><span>A pagar antes de la fecha límite</span><b>' + money(t.pendiente) + '</b></div><div class="kv"><span>Por facturar (próximo estado)</span><b>' + money(t.porFacturar) + '</b></div><div class="kv"><span>Compras tras el cierre (día ' + t.diaCierre + ')</span><b>' + money(t.comprasCiclo) + '</b></div><div class="kv"><span>Último cierre</span><b>' + esc(fechaCorta(t.ultimoCierre)) + '</b></div></div>';
+      h += '<div class="cc"><div class="rowh"><span class="lbl">Deuda real</span>' + ojoK("deuda", true) + '</div><div class="big"' + (visK("deuda") ? ' data-n="' + t.deuda + '"' : "") + '>' + bigK(t.deuda, "deuda") + '</div><div class="two"><div>Fecha límite (automática)<b>' + esc(fechaCorta(t.limite)) + '</b></div><div>Quedan<b class="w">' + (t.diasLimite === null ? "—" : t.diasLimite + " días") + '</b></div></div></div>';
+      h += '<div class="card"><div class="kv"><span>A pagar antes de la fecha límite</span><b>' + mk(t.pendiente, "deuda") + '</b></div><div class="kv"><span>Por facturar (próximo estado)</span><b>' + mk(t.porFacturar, "deuda") + '</b></div><div class="kv"><span>Compras tras el cierre (día ' + t.diaCierre + ')</span><b>' + mk(t.comprasCiclo, "deuda") + '</b></div><div class="kv"><span>Último cierre</span><b>' + esc(fechaCorta(t.ultimoCierre)) + '</b></div></div>';
       h += '<button class="btn sec2" data-a="hojaTarjeta">Llegó un estado de cuenta nuevo</button>';
     } else h += '<div class="card"><p class="hint">Aún no está configurada la hoja «Tarjeta» en tu Excel (menú 💰 Finanzas → Crear hojas nuevas).</p></div>';
-    h += '<div class="sec"><span>Conciliación con el banco</span></div><div class="card"><div class="kv"><span>Ahorro calculado</span><b>' + money(E.ahorro) + '</b></div><div class="kv"><span>Saldo real del banco</span><b>' + (E.banco === null ? "—" : money(E.banco)) + '</b></div>' +
-      (E.diferencia !== null ? '<div class="kv"><span>Diferencia</span><b style="color:' + (Math.abs(E.diferencia) < 0.005 ? 'var(--ok)' : 'var(--bad)') + '">' + (Math.abs(E.diferencia) < 0.005 ? "✔ Cuadra" : money(E.diferencia)) + '</b></div>' : "") +
+    h += '<div class="sec"><span>Conciliación con el banco</span></div><div class="card"><div class="rowh"><span class="lbl">Tu ahorro</span>' + ojoK("ahorro") + '</div><div class="kv"><span>Ahorro calculado</span><b>' + mk(E.ahorro, "ahorro") + '</b></div><div class="kv"><span>Saldo real del banco</span><b>' + (E.banco === null ? "—" : mk(E.banco, "ahorro")) + '</b></div>' +
+      (E.diferencia !== null ? '<div class="kv"><span>Diferencia</span><b style="color:' + (Math.abs(E.diferencia) < 0.005 ? 'var(--ok)' : 'var(--bad)') + '">' + (Math.abs(E.diferencia) < 0.005 ? "✔ Cuadra" : mk(E.diferencia, "ahorro")) + '</b></div>' : "") +
       '<button class="btn sec2" style="margin-top:8px" data-a="hojaBanco">Escribir saldo del banco</button></div>';
     if (E.ahorroMeses && E.ahorroMeses.length) {
       var max = Math.max.apply(null, E.ahorroMeses.map(function (x) { return Math.abs(x.neto); }).concat([1]));
@@ -545,7 +554,7 @@
       [["auto", "Automático"], ["claro", "Claro"], ["oscuro", "Oscuro"]].map(function (o) { return '<button class="' + (PREF.tema === o[0] ? "on" : "") + '" data-a="tema" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
       '</div><p class="hint" style="margin-top:6px">«Automático» sigue el modo claro u oscuro de tu iPhone.</p></div>';
     h += '<div class="card"><div class="lbl">Barra inferior</div><div class="seg" style="margin-top:8px">' +
-      [[false, "Flotante"], [true, "Pegada abajo"]].map(function (o) { return '<button class="' + ((PREF.dock === true) === o[0] ? "on" : "") + '" data-a="dock" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
+      [[false, "Flotante"], [true, "Pegada abajo"]].map(function (o) { return '<button class="' + ((PREF.dock !== false) === o[0] ? "on" : "") + '" data-a="dock" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
       '</div><p class="hint" style="margin-top:6px">Si ves una franja vacía bajo la barra, prueba «Pegada abajo».</p></div>';
     h += '<div class="card"><div class="lbl">Privacidad y seguridad</div>' +
       '<button class="cb' + (PREF.oculto ? " on" : "") + '" data-a="ojo" style="margin-top:4px"><span class="box">' + (PREF.oculto ? "✓" : "") + '</span><span style="flex:1">Ocultar los montos (también con el ojo del encabezado)</span></button>' +
@@ -679,6 +688,10 @@
     cambiarPin: function () { cfg = { url: cfg.url, pin: "" }; store("mg_cfg", null); S.setupMsg = "Escribe el PIN nuevo."; render(); },
     salir: function () { cfg = null; S.estado = null; S.G.data = null; store("mg_cfg", null); store("mg_estado", null); S.setupMsg = ""; S.tab = "inicio"; S.sub = null; render(); },
     dock: function (v) { PREF.dock = (v === "true"); guardarPref(); aplicarPantalla(); render(); },
+    ver: function (k) {
+      if (PREF.oculto) { toast("Los montos están ocultos con el ojo de arriba"); return; }
+      S.ver[k] = !S.ver[k]; render(); if (visK(k)) contarNumeros();
+    },
     ojo: function () { PREF.oculto = !PREF.oculto; guardarPref(); render(); },
     tema: function (v) { PREF.tema = v; guardarPref(); aplicarTema(); render(); },
     enviarCola: function () { enviarCola(true); },

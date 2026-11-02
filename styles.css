@@ -33,9 +33,9 @@ button:active{transform:scale(.97)}
 #app{position:fixed;top:0;bottom:0;left:0;right:0;display:flex;flex-direction:column;max-width:560px;margin:0 auto;background:var(--bg)}
 
 /* encabezado */
-.hdr{position:relative;flex:none;z-index:2;background:linear-gradient(155deg,#0A1A48 0%,#12307E 55%,#1F46B5 100%);color:#fff;padding:calc(var(--sat) + 14px) 20px 30px;border-radius:0 0 30px 30px;overflow:hidden;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;box-shadow:0 10px 28px rgba(0,0,0,.2)}
-.hdr::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.2) 1.3px,transparent 1.7px);background-size:11px 11px;-webkit-mask-image:radial-gradient(110% 150% at 100% 0%,#000 0%,transparent 62%);mask-image:radial-gradient(110% 150% at 100% 0%,#000 0%,transparent 62%);pointer-events:none}
-.hdr::after{content:"";position:absolute;right:-70px;top:-90px;width:230px;height:230px;border-radius:50%;background:radial-gradient(closest-side,rgba(125,162,255,.32),transparent);pointer-events:none}
+.hdr{position:relative;flex:none;z-index:2;background:linear-gradient(180deg,#0A1A48 0%,#0F2A70 42%,#1F46B5 100%);color:#fff;padding:calc(var(--sat) + 14px) 20px 30px;border-radius:0 0 30px 30px;overflow:hidden;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;box-shadow:0 10px 28px rgba(0,0,0,.2)}
+.hdr::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.2) 1.3px,transparent 1.7px);background-size:11px 11px;-webkit-mask-image:radial-gradient(110% 130% at 100% 70%,#000 0%,transparent 62%);mask-image:radial-gradient(110% 130% at 100% 70%,#000 0%,transparent 62%);pointer-events:none}
+.hdr::after{content:"";position:absolute;right:-70px;top:-10px;width:230px;height:230px;border-radius:50%;background:radial-gradient(closest-side,rgba(125,162,255,.32),transparent);pointer-events:none}
 .hdr>*{position:relative;z-index:1}
 .hdr small{display:block;font-size:12px;color:#B9C9EE;letter-spacing:.5px;text-transform:uppercase;font-weight:600}
 .hdr h1{font-size:25px;font-weight:700;margin-top:3px;letter-spacing:-.3px}
@@ -253,8 +253,14 @@ label.l{display:block;font-size:11.5px;color:var(--mut);letter-spacing:.4px;text
 .diag{font-size:12px;line-height:1.6;color:var(--mut);font-variant-numeric:tabular-nums}
 .diag b{color:var(--navy);font-weight:600}
 
-/* barra inferior pegada al borde (respaldo si iOS deja una franja sin pintar abajo) */
-html.dock,html.dock body{background-color:var(--surf)}
-html.dock .tabs{left:0;right:0;bottom:0;border-radius:24px 24px 0 0;border-width:1px 0 0;background:var(--surf);-webkit-backdrop-filter:none;backdrop-filter:none;padding:7px 6px 6px;box-shadow:0 -4px 18px rgba(0,0,0,.08)}
-html.dock .tabs .ind{bottom:6px}
-html.dock main{padding-bottom:98px}
+/* barra inferior pegada al borde (por defecto): ocupa todo el ancho y llega hasta abajo, como en otras apps */
+html.dock,html.dock body{background-color:var(--bg)}
+html.dock .tabs{left:0;right:0;bottom:0;border-radius:0;border-width:1px 0 0;background:var(--glass);box-shadow:none;padding:7px 6px calc(var(--sab) + 4px)}
+html.dock .tabs .ind{top:7px;bottom:calc(var(--sab) + 4px)}
+html.dock #capb{display:none}
+html.dock main{padding-bottom:calc(var(--sab) + 100px)}
+/* ojito de cada tarjeta */
+.rowh{display:flex;justify-content:space-between;align-items:center}
+.eye{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;color:var(--mut);background:var(--ico);margin:-6px -6px -6px 0}
+.eye svg{width:18px;height:18px}
+.eye.w{background:rgba(255,255,255,.14);color:#fff}

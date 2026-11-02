@@ -54,6 +54,11 @@ La app se actualiza sola al volver a abrirla con internet. Si cambias el script,
 - **Nuevo ícono** («S/» sobre azul) y logo en la pantalla de inicio. Para ver el ícono nuevo hay que quitar la app de la pantalla de inicio y agregarla otra vez.
 - **Pantalla completa en iPhone:** colores sólidos en los bordes (hora/batería y barra inferior) y altura completa.
 
+## Novedades v1.4
+- **Ojito en «Ahorro disponible» y «Deuda de la tarjeta»** (Inicio y Tarjeta): los montos grandes **arrancan ocultos cada vez que abres la app**; se muestran al tocar el ojito (y vuelven a ocultarse al cerrar). El ojo del encabezado oculta todos los montos de forma permanente.
+- **Barra inferior pegada al borde** (por defecto; en Ajustes se puede volver a «Flotante»). Encabezado con degradado que parte del mismo azul que la barra de estado, sin línea de unión.
+- Barra de estado en modo «negro» (ventana completa en iPhone 15 Pro Max).
+
 ## Límites conocidos
 - Editar, borrar, pagar fijos y actualizar la tarjeta necesitan internet (solo registrar gasto/ingreso funciona sin conexión).
 - Las notificaciones push de iPhone solo existen para páginas agregadas a la pantalla de inicio y no están incluidas en esta versión.
