@@ -2,13 +2,25 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.0";
+  var VERSION = "1.1";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
-  function money(n) { return "S/ " + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-  function bigMoney(n) { return '<sm>S/</sm>' + Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  var PREF = store("mg_pref") || {};
+  PREF.tema = PREF.tema || "auto"; PREF.oculto = !!PREF.oculto;
+  function guardarPref() { store("mg_pref", PREF); }
+  var PUNTOS = "••••••";
+  function money(n) { return "S/ " + (PREF.oculto ? PUNTOS : Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })); }
+  function bigMoney(n) { return '<sm>S/</sm>' + (PREF.oculto ? PUNTOS : Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })); }
+  function nf(n) { return PREF.oculto ? "••" : Number(n || 0).toLocaleString("en-US"); }
+  var mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  function aplicarTema() {
+    var oscuro = PREF.tema === "oscuro" || (PREF.tema === "auto" && mq && mq.matches);
+    document.documentElement.setAttribute("data-t", oscuro ? "dark" : "light");
+  }
+  aplicarTema();
+  if (mq && mq.addEventListener) mq.addEventListener("change", aplicarTema);
   function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} return null; }
   var MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Setiembre", "Octubre", "Noviembre", "Diciembre"];
   var MABR = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SET", "OCT", "NOV", "DIC"];
@@ -32,6 +44,9 @@
     bud: '<svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
     fix: '<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4M9 15l2 2 4-4"/></svg>',
     rep: '<svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>',
+    eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+    eyeoff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 6.1A10 10 0 0 1 12 6c6.4 0 10 6 10 6a17 17 0 0 1-3.2 3.9M6.6 6.7C3.9 8.4 2 12 2 12s3.6 6 10 6c1.6 0 3-.4 4.3-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>',
+    lock: '<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
     cog: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2l.4 2.7h4l.4-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>'
   };
 
@@ -46,7 +61,7 @@
 
   /* ---------- conexión ---------- */
   function call(body) {
-    if (cfg && cfg.demo) return window.MG_DEMO(body);
+    if (cfg && cfg.demo) return window.MG_OFFLINE ? Promise.reject(new TypeError("Failed to fetch")) : window.MG_DEMO(body);
     return fetch(cfg.url, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body), redirect: "follow" })
       .then(function (r) { return r.json(); });
   }
@@ -58,8 +73,9 @@
   }
   function fail(e) {
     if (e && (e.codigo === "pin" || e.codigo === "sin_pin" || e.codigo === "bloqueado")) { S.setupMsg = e.message; cfg = null; store("mg_cfg", null); render(); return; }
-    toast(e && e.message && e.message.indexOf("Failed to fetch") < 0 ? e.message : "Sin conexión. Inténtalo de nuevo.", "err");
+    toast(esRed(e) ? "Sin conexión. Inténtalo de nuevo." : ((e && e.message) || "Error"), "err");
   }
+  function esRed(e) { return !!e && (e instanceof TypeError || /Failed to fetch|Load failed|NetworkError|network/i.test(e.message || "")); }
   var tt;
   function toast(msg, tipo, ms) {
     var t = $("#toast"); t.textContent = msg; t.className = "show " + (tipo || ""); clearTimeout(tt);
@@ -78,17 +94,21 @@
       b("tarjeta", "card", "Tarjeta") + b("mas", "dots", "Más") + '</nav>';
   }
   var refreshBtn = '<button class="ic" data-a="refrescar" aria-label="Actualizar">' + I.refresh + '</button>';
+  function accionesHdr() {
+    return '<div style="display:flex;gap:8px"><button class="ic" data-a="ojo" aria-label="Mostrar u ocultar montos">' + (PREF.oculto ? I.eyeoff : I.eye) + '</button>' + refreshBtn + '</div>';
+  }
 
   function render() {
     var el = $("#app");
     var ae = document.activeElement, aeId = ae && ae.id === "g-q" ? ae.id : null, aeSel = aeId ? ae.selectionStart : 0;
     if (!cfg) { el.innerHTML = vistaSetup(); return; }
+    if (S.locked) { cerrarHoja(); el.innerHTML = vistaLock(); return; }
     var h = "", m = "";
     var E = S.estado;
-    if (S.tab === "inicio") { h = header("Mis Gastos", "Hola, " + esc(E ? E.nombre : "") + ' · <b>' + esc(E ? E.mes : "") + '</b>', refreshBtn); m = vistaInicio(); }
+    if (S.tab === "inicio") { h = header("Mis Gastos", "Hola, " + esc(E ? E.nombre : "") + ' · <b>' + esc(E ? E.mes : "") + '</b>', accionesHdr()); m = vistaInicio(); }
     else if (S.tab === "registrar") { h = header("Nuevo registro", "Registrar"); m = vistaRegistrar(); }
-    else if (S.tab === "gastos") { h = header("Historial", "Gastos", refreshBtn); m = vistaGastos(); }
-    else if (S.tab === "tarjeta") { h = header("Tarjeta de crédito", "Tarjeta y ahorro", refreshBtn); m = vistaTarjeta(); }
+    else if (S.tab === "gastos") { h = header("Historial", "Gastos", accionesHdr()); m = vistaGastos(); }
+    else if (S.tab === "tarjeta") { h = header("Tarjeta de crédito", "Tarjeta y ahorro", accionesHdr()); m = vistaTarjeta(); }
     else { var tt2 = { presupuesto: "Presupuesto", fijos: "Gastos fijos", informes: "Informes", ajustes: "Ajustes" }[S.sub] || "Más"; h = header(S.sub ? "Más" : "Menú", tt2); m = vistaMas(); }
     el.innerHTML = h + '<main id="main">' + m + '</main>' + tabs();
     if (S.tab === "registrar") enlazarRegistrar();
@@ -96,10 +116,17 @@
   }
 
   /* ---- Inicio ---- */
+  function bannerCola() {
+    var c = cola(), pend = c.filter(function (x) { return !x.error; }).length, err = c.length - pend;
+    if (!c.length) return "";
+    return '<div class="alert" style="flex-wrap:wrap">' +
+      (pend ? '<span>⏳</span><span style="flex:1;text-align:left">' + pend + ' registro' + (pend > 1 ? "s" : "") + ' pendiente' + (pend > 1 ? "s" : "") + ' de enviar</span><button class="linkbtn" data-a="enviarCola">Enviar ahora</button>' : "") +
+      (err ? '<button class="linkbtn" data-a="ir" data-v="ajustes" style="width:100%;text-align:left">⚠️ ' + err + ' no se pudo enviar · revisar</button>' : "") + '</div>';
+  }
   function vistaInicio() {
     var E = S.estado;
     if (!E) return '<div class="empty"><span class="spin" style="border-color:#2A5DA8;border-right-color:transparent"></span><p style="margin-top:10px">Cargando tus datos…</p></div>';
-    var h = "", pill;
+    var h = bannerCola() + (S.offline ? '<div class="hint" style="text-align:center">📴 Sin conexión · mostrando tus últimos datos guardados</div>' : ""), pill;
     if (E.banco === null) pill = '<span class="pill w">Escribe el saldo de tu banco en «Tarjeta» para comprobar</span>';
     else if (Math.abs(E.diferencia) < 0.005) pill = '<span class="pill">✔ Cuadra con tu banco</span>';
     else pill = '<span class="pill w">⚠ Difiere ' + money(Math.abs(E.diferencia)) + ' con tu banco</span>';
@@ -137,7 +164,7 @@
 
   /* ---- Registrar ---- */
   function vistaRegistrar() {
-    var F = S.F, E = S.estado, h = "";
+    var F = S.F, E = S.estado, h = bannerCola();
     h += '<div class="seg" role="tablist"><button class="' + (F.modo === "gasto" ? "on" : "") + '" data-a="modo" data-v="gasto">Gasto</button><button class="' + (F.modo === "ingreso" ? "on" : "") + '" data-a="modo" data-v="ingreso">Ingreso</button></div>';
     h += '<div class="amt"><span>S/</span><input id="f-monto" inputmode="decimal" autocomplete="off" placeholder="0.00" value="' + esc(F.monto) + '" aria-label="Monto"></div>';
     if (F.modo === "gasto") {
@@ -197,12 +224,47 @@
       if (!F.lugar.trim()) { toast("Escribe o elige el lugar", "err"); return; }
       body = { tipo: "gasto", tienda: F.lugar.trim(), categoria: F.cat, metodoPago: F.metodo, monto: monto, descripcion: F.detalle.trim() };
     } else body = { tipo: "ingreso", descripcion: F.desc.trim() || "Ingreso Extra", monto: monto };
+    body.idr = nuevoId(); body.fecha = fechaLocal(new Date());     // id único (evita duplicados al reenviar) y hora real del registro
     F.guardando = true; render();
     call(body).then(function (j) {
       if (j.status === "error") throw new Error(j.mensaje);
       var modo = F.modo; S.F = nuevoForm(); S.F.modo = modo; S.G.data = null; S.T.cargado = false;
-      toast(j.mensaje || "✅ Guardado", "ok", 4800); cargarEstado(true); render();
-    }).catch(function (e) { F.guardando = false; render(); fail(e); });
+      toast(j.mensaje || "✅ Guardado", "ok", 4800); cargarEstado(true); render(); enviarCola(false);
+    }).catch(function (e) {
+      F.guardando = false;
+      if (esRed(e)) {
+        encolar(body, (F.modo === "gasto" ? body.tienda : body.descripcion) + " · " + money(body.monto));
+        var modo2 = F.modo; S.F = nuevoForm(); S.F.modo = modo2; render();
+        toast("📴 Sin conexión: guardado en el teléfono. Se enviará solo cuando vuelva internet.", "ok", 5600); return;
+      }
+      render(); fail(e);
+    });
+  }
+  /* ---- registros pendientes (sin conexión) ---- */
+  var COLA_K = "mg_cola", enviando = false;
+  function nuevoId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function fechaLocal(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds()); }
+  function cola() { return store(COLA_K) || []; }
+  function encolar(body, nota) { var c = cola(); c.push({ id: body.idr, body: body, nota: nota, ts: Date.now() }); store(COLA_K, c); }
+  function repintar() { var a = document.activeElement; if (!a || (a.tagName !== "INPUT" && a.tagName !== "TEXTAREA")) render(); }
+  function enviarCola(manual) {
+    if (enviando || !cfg || S.locked) return;
+    if (!cola().some(function (x) { return !x.error; })) { if (manual) toast("No hay nada pendiente"); return; }
+    enviando = true; var enviados = 0;
+    (function paso() {
+      var it = cola().filter(function (x) { return !x.error; })[0];
+      if (!it) {
+        enviando = false;
+        if (enviados) { toast("✅ Se enviaron " + enviados + " registro" + (enviados > 1 ? "s" : "") + " pendiente" + (enviados > 1 ? "s" : ""), "ok", 4200); S.G.data = null; cargarEstado(true); if (S.tab === "gastos") cargarGastos(); }
+        repintar(); return;
+      }
+      call(it.body).then(function (j) {
+        var c2 = cola();
+        if (j && j.status === "error") c2.forEach(function (x) { if (x.id === it.id) x.error = j.mensaje || "Rechazado"; });
+        else { c2 = c2.filter(function (x) { return x.id !== it.id; }); enviados++; }
+        store(COLA_K, c2); paso();
+      }).catch(function (e) { enviando = false; if (manual) toast(esRed(e) ? "Aún sin conexión" : e.message, "err"); repintar(); });
+    })();
   }
   function hojaCategorias() {
     var cats = (S.estado && S.estado.categoriasActivas) || [];
@@ -213,7 +275,7 @@
 
   /* ---- Gastos ---- */
   function vistaGastos() {
-    var G = S.G, h = "";
+    var G = S.G, h = bannerCola();
     h += '<div class="mes"><button data-a="mesG" data-v="-1" aria-label="Mes anterior">‹</button><b>' + mesNombre(G.mes) + '</b><button data-a="mesG" data-v="1" aria-label="Mes siguiente">›</button></div>';
     h += '<div class="search">' + I.search + '<input id="g-q" placeholder="Buscar lugar o detalle" value="' + esc(G.q) + '" autocomplete="off"></div>';
     h += '<div class="filt"><button class="' + (!G.metodo ? "on" : "") + '" data-a="metG" data-v="">Todos</button><button class="' + (G.metodo === "Saldo Disponible" ? "on" : "") + '" data-a="metG" data-v="Saldo Disponible">💵 Saldo</button><button class="' + (G.metodo === "Tarjeta de Crédito" ? "on" : "") + '" data-a="metG" data-v="Tarjeta de Crédito">💳 Tarjeta</button><button class="' + (G.cat ? "on" : "") + '" data-a="catG">' + (G.cat ? esc(G.cat) : "Categoría ▾") + '</button></div>';
@@ -313,12 +375,12 @@
       var max = Math.max.apply(null, E.ahorroMeses.map(function (x) { return Math.abs(x.neto); }).concat([1]));
       h += '<div class="sec"><span>Ahorro mes a mes</span></div><div class="card"><div class="mini">' + E.ahorroMeses.map(function (x, i) {
         var ult = i === E.ahorroMeses.length - 1, hh = Math.max(3, Math.round(Math.abs(x.neto) / max * 70));
-        return '<div><b>' + (x.neto >= 0 ? "+" : "−") + Math.abs(Math.round(x.neto)).toLocaleString("en-US") + '</b><i class="' + (x.neto < 0 ? "neg" : ult ? "cur" : "") + '" style="height:' + hh + 'px"></i>' + esc(x.mes) + (ult ? "*" : "") + '</div>';
+        return '<div><b>' + (x.neto >= 0 ? "+" : "−") + nf(Math.abs(Math.round(x.neto))) + '</b><i class="' + (x.neto < 0 ? "neg" : ult ? "cur" : "") + '" style="height:' + hh + 'px"></i>' + esc(x.mes) + (ult ? "*" : "") + '</div>';
       }).join("") + '</div><p class="hint" style="margin-top:6px">Lo que sumaste a tu ahorro (ingresos − gastos con Saldo Disponible). * mes en curso</p></div>';
     }
     if (E.metas && E.metas.length) {
       h += '<div class="sec"><span>Metas · con ' + money(E.ahorro) + ' disponibles</span></div><div class="card">' + E.metas.map(function (m) {
-        return '<div class="goal"><div class="h"><b>' + esc(m.nombre) + '</b><span>' + (m.lograda ? "✔ lograda" : m.avance + "% de " + Number(m.objetivo).toLocaleString("en-US")) + '</span></div><div class="bar g"><i style="width:' + Math.min(100, m.avance) + '%"></i></div>' + (m.lograda ? "" : '<div class="hint" style="margin-top:3px">Faltan ' + money(m.falta) + '</div>') + '</div>';
+        return '<div class="goal"><div class="h"><b>' + esc(m.nombre) + '</b><span>' + (m.lograda ? "✔ lograda" : m.avance + "% de " + nf(m.objetivo)) + '</span></div><div class="bar g"><i style="width:' + Math.min(100, m.avance) + '%"></i></div>' + (m.lograda ? "" : '<div class="hint" style="margin-top:3px">Faltan ' + money(m.falta) + '</div>') + '</div>';
       }).join("") + '</div>';
     }
     return h;
@@ -390,12 +452,47 @@
     return h;
   }
   function vistaAjustes() {
-    var E = S.estado;
-    return '<div class="card"><div class="kv"><span>Versión de la app</span><b>' + VERSION + '</b></div><div class="kv"><span>Versión del script</span><b>' + esc(E ? E.version : "—") + '</b></div><div class="kv"><span>Conexión</span><b>' + (cfg.demo ? "Demostración" : "Tu script de Google") + '</b></div></div>' +
-      '<div class="card stack"><div class="lbl">Instalar en tu iPhone</div><p class="hint">En Safari toca Compartir (□↑) → «Agregar a pantalla de inicio». Ábrela desde el ícono y funciona a pantalla completa.</p></div>' +
-      (cfg.demo ? '<button class="btn" data-a="salir">Salir de la demostración</button>' :
-        '<button class="btn sec2" data-a="cambiarPin">Cambiar el PIN guardado</button><button class="btn bad" data-a="salir">Cerrar sesión y borrar datos del teléfono</button>' +
-        '<p class="hint">El PIN se define en tu Excel: menú 💰 Finanzas → 🔑 Definir PIN de la app web. Cerrar sesión solo borra lo guardado en este teléfono.</p>');
+    var E = S.estado, c = cola(), h = "";
+    h += '<div class="card"><div class="lbl">Apariencia</div><div class="seg" style="margin-top:8px">' +
+      [["auto", "Automático"], ["claro", "Claro"], ["oscuro", "Oscuro"]].map(function (o) { return '<button class="' + (PREF.tema === o[0] ? "on" : "") + '" data-a="tema" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
+      '</div><p class="hint" style="margin-top:6px">«Automático» sigue el modo claro u oscuro de tu iPhone.</p></div>';
+    h += '<div class="card"><div class="lbl">Privacidad y seguridad</div>' +
+      '<button class="cb' + (PREF.oculto ? " on" : "") + '" data-a="ojo" style="margin-top:4px"><span class="box">' + (PREF.oculto ? "✓" : "") + '</span><span style="flex:1">Ocultar los montos (también con el ojo del encabezado)</span></button>' +
+      (PREF.lock && !cfg.demo ?
+        '<div class="kv"><span>🔒 Candado activado</span><b>' + PREF.lock.len + ' dígitos</b></div><label class="l" style="margin-top:8px">Pedir el código</label><div class="mset">' +
+        [[0, "Siempre"], [1, "Tras 1 min"], [5, "Tras 5 min"]].map(function (o) { return '<button class="' + (PREF.lock.min === o[0] ? "on" : "") + '" data-a="lockMin" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
+        '</div><div class="row2" style="margin-top:10px"><button class="btn sec2" data-a="hojaLock">Cambiar código</button><button class="btn sec2" data-a="lockOff">Quitar candado</button></div>' :
+        '<button class="btn sec2" style="margin-top:8px" data-a="hojaLock">🔒 Activar candado con código</button><p class="hint" style="margin-top:6px">Un código corto que se pide al abrir la app. Solo vale en este teléfono.</p>') + '</div>';
+    if (c.length) {
+      h += '<div class="sec"><span>Registros pendientes</span></div><div class="card" style="padding:4px 15px">' + c.map(function (x) {
+        return '<div class="it"><span class="ico">' + (x.error ? "⚠️" : "⏳") + '</span><span class="t"><b>' + esc(x.nota || "Registro") + '</b><small>' + (x.error ? esc(x.error) : "Esperando conexión") + '</small></span>' +
+          (x.error ? '<button class="linkbtn" data-a="colaDescartar" data-v="' + esc(x.id) + '">Descartar</button>' : "") + '</div>';
+      }).join("") + '</div>' + (c.some(function (x) { return !x.error; }) ? '<button class="btn" data-a="enviarCola">Enviar ahora</button>' : "");
+    }
+    h += '<div class="card"><div class="kv"><span>Versión de la app</span><b>' + VERSION + '</b></div><div class="kv"><span>Versión del script</span><b>' + esc(E ? E.version : "—") + '</b></div><div class="kv"><span>Conexión</span><b>' + (cfg.demo ? "Demostración" : "Tu script de Google") + '</b></div></div>' +
+      '<div class="card stack"><div class="lbl">Instalar en tu iPhone</div><p class="hint">En Safari toca Compartir (□↑) → «Agregar a pantalla de inicio». Ábrela desde el ícono y funciona a pantalla completa.</p></div>';
+    h += cfg.demo ? '<button class="btn" data-a="salir">Salir de la demostración</button>' :
+      '<button class="btn sec2" data-a="cambiarPin">Cambiar el PIN guardado</button><button class="btn bad" data-a="salir">Cerrar sesión y borrar datos del teléfono</button>' +
+      '<p class="hint">El PIN se define en tu Excel: menú 💰 Finanzas → 🔑 Definir PIN de la app web. Cerrar sesión solo borra lo guardado en este teléfono.</p>';
+    return h;
+  }
+
+  /* ---- Candado de la app ---- */
+  function hashLock(code, salt) {
+    var txt = "mg|" + salt + "|" + code;
+    if (window.crypto && crypto.subtle && window.TextEncoder) {
+      return crypto.subtle.digest("SHA-256", new TextEncoder().encode(txt)).then(function (b) { return Array.prototype.map.call(new Uint8Array(b), function (x) { return ("0" + x.toString(16)).slice(-2); }).join(""); });
+    }
+    var h = 5381; for (var i = 0; i < txt.length; i++) h = ((h << 5) + h + txt.charCodeAt(i)) | 0;
+    return Promise.resolve("w" + h);
+  }
+  function vistaLock() {
+    var n = PREF.lock.len, dots = "";
+    for (var i = 0; i < n; i++) dots += '<i class="' + (i < S.lockIn.length ? "on" : "") + '"></i>';
+    var keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "<"];
+    return '<div class="lock"><div class="lk-top"><div class="lk-ic">' + I.lock + '</div><h1>Mis <b>Gastos</b></h1><p>' + esc(S.lockMsg || "Escribe tu código para entrar") + '</p><div class="dots' + (S.lockErr ? " err" : "") + '">' + dots + '</div></div>' +
+      '<div class="keys">' + keys.map(function (k) { return k === "" ? '<span></span>' : '<button data-a="tecla" data-v="' + k + '" aria-label="' + (k === "<" ? "Borrar" : k) + '">' + (k === "<" ? "⌫" : k) + '</button>'; }).join("") + '</div>' +
+      '<button class="linkbtn lk-forgot" data-a="olvideLock">Olvidé mi código</button></div>';
   }
 
   /* ---- Acceso ---- */
@@ -427,7 +524,8 @@
   function cargarEstado(silencioso) {
     if (!cfg) return;
     if (!silencioso && !S.estado) render();
-    app("estado").then(function (j) { S.estado = j; store("mg_estado", j); if (S.tab !== "registrar" || !silencioso) render(); }).catch(fail);
+    app("estado").then(function (j) { S.estado = j; S.offline = false; store("mg_estado", j); if (S.tab !== "registrar" || !silencioso) render(); })
+      .catch(function (e) { if (esRed(e)) { S.offline = true; if (S.tab === "inicio") render(); } else fail(e); });
   }
   function refrescarTodo() { S.G.data = null; cargarEstado(true); if (S.tab === "gastos") { render(); cargarGastos(); } }
   function cargarFijos() { app("fijos").then(function (j) { S.FJ.data = j; S.FJ.sel = {}; if (S.sub === "fijos") render(); }).catch(fail); }
@@ -482,6 +580,47 @@
     mesI: function (v) { S.IN.mes = mesMover(S.IN.mes, +v); render(); cargarInformes(); },
     cambiarPin: function () { cfg = { url: cfg.url, pin: "" }; store("mg_cfg", null); S.setupMsg = "Escribe el PIN nuevo."; render(); },
     salir: function () { cfg = null; S.estado = null; S.G.data = null; store("mg_cfg", null); store("mg_estado", null); S.setupMsg = ""; S.tab = "inicio"; S.sub = null; render(); },
+    ojo: function () { PREF.oculto = !PREF.oculto; guardarPref(); render(); },
+    tema: function (v) { PREF.tema = v; guardarPref(); aplicarTema(); render(); },
+    enviarCola: function () { enviarCola(true); },
+    colaDescartar: function (v) { store(COLA_K, cola().filter(function (x) { return x.id !== v; })); render(); },
+    hojaLock: function () {
+      abrirHoja('<div class="grab"></div><h3>Candado de la app</h3><p class="hint">Un código de 4 a 6 números que se pide al abrir la app. Es solo de este teléfono; no cambia tu PIN del Excel.</p>' +
+        '<div><label class="l">Código</label><input class="field" id="l-1" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></div>' +
+        '<div><label class="l">Repite el código</label><input class="field" id="l-2" type="password" inputmode="numeric" maxlength="6" autocomplete="off"></div>' +
+        '<button class="btn" data-a="lockGuardar">Guardar candado</button><button class="btn sec2" data-a="cerrar">Cancelar</button>');
+    },
+    lockGuardar: function () {
+      var a = $("#l-1").value.trim(), b = $("#l-2").value.trim();
+      if (!/^\d{4,6}$/.test(a)) { toast("El código debe tener de 4 a 6 números", "err"); return; }
+      if (a !== b) { toast("Los dos códigos no coinciden", "err"); return; }
+      var salt = nuevoId();
+      hashLock(a, salt).then(function (h) {
+        PREF.lock = { s: salt, h: h, len: a.length, min: PREF.lock && PREF.lock.min != null ? PREF.lock.min : 1 };
+        guardarPref(); cerrarHoja(); toast("🔒 Candado activado", "ok"); render();
+      });
+    },
+    lockOff: function () { PREF.lock = null; guardarPref(); toast("Candado desactivado"); render(); },
+    lockMin: function (v) { PREF.lock.min = +v; guardarPref(); render(); },
+    tecla: function (v) {
+      if (S.lockBloq && Date.now() < S.lockBloq) return;
+      if (v === "<") { S.lockIn = S.lockIn.slice(0, -1); S.lockErr = false; render(); return; }
+      if (S.lockIn.length >= PREF.lock.len) return;
+      S.lockIn += v; S.lockErr = false; render();
+      if (S.lockIn.length === PREF.lock.len) {
+        hashLock(S.lockIn, PREF.lock.s).then(function (h) {
+          if (h === PREF.lock.h) { S.locked = false; S.lockIn = ""; S.lockFallos = 0; S.lockMsg = ""; render(); enviarCola(false); cargarEstado(true); return; }
+          S.lockFallos = (S.lockFallos || 0) + 1; S.lockIn = ""; S.lockErr = true;
+          if (S.lockFallos >= 5) { S.lockBloq = Date.now() + 30000; S.lockFallos = 0; S.lockMsg = "Demasiados intentos. Espera 30 segundos."; } else S.lockMsg = "Código incorrecto";
+          render();
+        });
+      }
+    },
+    olvideLock: function () {
+      abrirHoja('<div class="grab"></div><h3>¿Olvidaste el código?</h3><p class="hint">Para entrar sin él se cierra la sesión de este teléfono y tendrás que volver a conectar la app con el enlace de tu script y tu PIN del Excel. Tus datos del Excel no se tocan.</p>' +
+        '<button class="btn bad" data-a="lockReset">Cerrar sesión y entrar</button><button class="btn sec2" data-a="cerrar">Cancelar</button>');
+    },
+    lockReset: function () { PREF.lock = null; guardarPref(); S.locked = false; cerrarHoja(); acciones.salir(); },
     conectar: conectar,
     demo: function () { cfg = { demo: true }; store("mg_cfg", cfg); S.estado = null; S.tab = "inicio"; cargarEstado(false); render(); }
   };
@@ -498,12 +637,18 @@
 
   /* ---------- arranque ---------- */
   if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) navigator.serviceWorker.register("sw.js").catch(function () {});
-  var vis = Date.now();
-  document.addEventListener("visibilitychange", function () { if (!document.hidden && cfg && Date.now() - vis > 60000) { vis = Date.now(); cargarEstado(true); if (S.tab === "gastos") cargarGastos(); } else if (document.hidden) vis = Date.now(); });
+  var vis = Date.now(), oculta = 0;
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { oculta = Date.now(); vis = Date.now(); return; }
+    if (PREF.lock && cfg && !cfg.demo && !S.locked && oculta && Date.now() - oculta >= PREF.lock.min * 60000) { S.locked = true; S.lockIn = ""; S.lockMsg = ""; render(); }
+    if (cfg && !S.locked) { enviarCola(false); if (Date.now() - vis > 60000) { vis = Date.now(); cargarEstado(true); if (S.tab === "gastos") cargarGastos(); } }
+  });
+  window.addEventListener("online", function () { enviarCola(false); cargarEstado(true); });
+  if (cfg && !cfg.demo && PREF.lock) { S.locked = true; S.lockIn = ""; }
   render();
-  if (cfg) cargarEstado(true);
+  if (cfg && !S.locked) { cargarEstado(true); enviarCola(false); }
   if (/^#demo/.test(location.hash)) {
-    cfg = { demo: true };
+    cfg = { demo: true }; S.locked = false;
     var mt = /tab=(\w+)/.exec(location.hash), ms = /sub=(\w+)/.exec(location.hash);
     if (mt) S.tab = mt[1]; if (ms) S.sub = ms[1];
     render(); cargarEstado(false);

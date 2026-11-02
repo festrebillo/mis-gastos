@@ -36,7 +36,13 @@ Truco: para no escribir el enlace largo en el teléfono, envíate a ti mismo (no
 ## Actualizaciones
 La app se actualiza sola al volver a abrirla con internet. Si cambias el script, publica «Nueva versión» en Apps Script (mismo enlace).
 
-## Límites conocidos (v1.0)
-- Necesita internet para registrar (no hay cola sin conexión todavía).
+## Novedades v1.1
+- **Registrar sin internet:** si no hay señal, el registro se guarda en el teléfono (con su hora real) y se envía solo al volver la conexión. Cada registro lleva un id único: si se reenvía, el script no lo duplica. Requiere el script v3.3.1.
+- **Ocultar montos:** ojo en el encabezado (Inicio, Gastos, Tarjeta); se recuerda.
+- **Candado de la app:** código de 4 a 6 números, solo de este teléfono (se guarda su huella, no el código). Se pide al abrir y tras 0, 1 o 5 minutos fuera. «Olvidé mi código» cierra la sesión y pide de nuevo el enlace y el PIN del Excel.
+- **Modo oscuro:** Automático (sigue al iPhone), Claro u Oscuro, en Ajustes.
+
+## Límites conocidos
+- Editar, borrar, pagar fijos y actualizar la tarjeta necesitan internet (solo registrar gasto/ingreso funciona sin conexión).
 - Las notificaciones push de iPhone solo existen para páginas agregadas a la pantalla de inicio y no están incluidas en esta versión.
 - Borrar quita la fila del Excel; no hay «deshacer».
