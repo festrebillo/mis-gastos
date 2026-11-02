@@ -2,18 +2,18 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.4";
+  var VERSION = "1.5";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   var PREF = store("mg_pref") || {};
-  PREF.tema = PREF.tema || "auto"; PREF.oculto = !!PREF.oculto;
+  PREF.tema = PREF.tema || "auto"; PREF.ocultarAlAbrir = PREF.ocultarAlAbrir === true; delete PREF.oculto;
   function guardarPref() { store("mg_pref", PREF); }
   var PUNTOS = "••••••";
-  function money(n) { return "S/ " + (PREF.oculto ? PUNTOS : Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })); }
-  function bigMoney(n) { return '<sm>S/</sm>' + (PREF.oculto ? PUNTOS : Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })); }
-  function nf(n) { return PREF.oculto ? "••" : Number(n || 0).toLocaleString("en-US"); }
+  function money(n) { return "S/ " + (S.ocultoTodo ? PUNTOS : Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })); }
+  function bigMoney(n) { return '<sm>S/</sm>' + (S.ocultoTodo ? PUNTOS : Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })); }
+  function nf(n) { return S.ocultoTodo ? "••" : Number(n || 0).toLocaleString("en-US"); }
   var mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
   function aplicarTema() {
     var oscuro = PREF.tema === "oscuro" || (PREF.tema === "auto" && mq && mq.matches);
@@ -62,8 +62,10 @@
   };
   function nuevoForm() { return { modo: "gasto", monto: "", lugar: "", cat: "", catAuto: true, metodo: "Saldo Disponible", detalle: "", desc: "", guardando: false }; }
 
-  S.ver = { ahorro: false, deuda: false };            // los montos grandes arrancan ocultos cada vez que abres la app
-  function visK(k) { return S.ver[k] === true && !PREF.oculto; }
+  S.ver = { ahorro: false, deuda: false };
+  S.ocultoTodo = PREF.ocultarAlAbrir === true;      // por defecto solo «Ahorro» y «Deuda» arrancan ocultos; lo demás se ve
+  function todoVisible() { return !S.ocultoTodo && S.ver.ahorro && S.ver.deuda; }            // los montos grandes arrancan ocultos cada vez que abres la app
+  function visK(k) { return S.ver[k] === true && !S.ocultoTodo; }
   function mk(n, k) { return visK(k) ? money(n) : "S/ " + PUNTOS; }
   function bigK(n, k) { return '<sm>S/</sm>' + (visK(k) ? Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : PUNTOS); }
   function ojoK(k, claro) { return '<button class="eye' + (claro ? " w" : "") + '" data-a="ver" data-v="' + k + '" aria-label="Mostrar u ocultar">' + (visK(k) ? I.eye : I.eyeoff) + '</button>'; }
@@ -115,7 +117,7 @@
     contarNumeros();
   }
   function contarNumeros() {
-    if (PREF.oculto || reducido()) return;
+    if (S.ocultoTodo || reducido()) return;
     Array.prototype.forEach.call(document.querySelectorAll("[data-n]"), function (e) {
       var fin = parseFloat(e.getAttribute("data-n")); if (!isFinite(fin)) return;
       var t0 = performance.now(), dur = 850;
@@ -132,7 +134,7 @@
   }
   var refreshBtn = '<button class="ic" data-a="refrescar" aria-label="Actualizar">' + I.refresh + '</button>';
   function accionesHdr() {
-    return '<div style="display:flex;gap:8px"><button class="ic" data-a="ojo" aria-label="Mostrar u ocultar montos">' + (PREF.oculto ? I.eyeoff : I.eye) + '</button>' + refreshBtn + '</div>';
+    return '<div style="display:flex;gap:8px"><button class="ic" data-a="ojo" aria-label="Mostrar u ocultar montos">' + (todoVisible() ? I.eye : I.eyeoff) + '</button>' + refreshBtn + '</div>';
   }
 
   function render() {
@@ -169,6 +171,23 @@
       (pend ? '<span>⏳</span><span style="flex:1;text-align:left">' + pend + ' registro' + (pend > 1 ? "s" : "") + ' pendiente' + (pend > 1 ? "s" : "") + ' de enviar</span><button class="linkbtn" data-a="enviarCola">Enviar ahora</button>' : "") +
       (err ? '<button class="linkbtn" data-a="ir" data-v="ajustes" style="width:100%;text-align:left">⚠️ ' + err + ' no se pudo enviar · revisar</button>' : "") + '</div>';
   }
+  function metaCard(E) {
+    var m = E.metaAhorro;
+    if (!m) return '<button class="card" data-a="hojaMeta"><div class="rowh"><span class="lbl">Meta de ahorro mensual</span><span class="linkbtn">Definir</span></div><p class="hint" style="margin-top:4px">Elige cuánto quieres ahorrar cada mes y sigue tu avance aquí.</p></button>';
+    var ok = m.logrado >= m.objetivo && m.objetivo > 0, pc = m.objetivo > 0 ? Math.max(0, Math.min(100, Math.round(m.logrado / m.objetivo * 100))) : 0;
+    var falta = Math.max(0, m.objetivo - m.logrado);
+    return '<button class="card" data-a="hojaMeta"><div class="rowh"><span class="lbl">Meta de ahorro del mes</span><span class="hint">' + (m.tipo === "pct" ? m.valor + " % de tus ingresos" : money(m.valor) + " al mes") + '</span></div>' +
+      '<div class="med" style="margin-top:4px">' + money(m.logrado) + ' <span style="font-size:14px;color:var(--mut);font-weight:600">de ' + money(m.objetivo) + '</span></div>' +
+      '<div class="bar' + (ok ? " ok" : "") + '"><i ' + wi(pc) + '></i></div>' +
+      '<div class="hint" style="margin-top:6px">' + (m.logrado < 0 ? "Este mes llevas más gastos que ingresos." : ok ? "🎉 ¡Meta cumplida este mes!" : "Te faltan " + money(falta) + " para tu meta") + '</div></button>';
+  }
+  function hojaMeta() {
+    var m = S.estado && S.estado.metaAhorro, tipo = m ? m.tipo : "pct"; S.metaTipo = tipo;
+    abrirHoja('<div class="grab"></div><h3>Meta de ahorro mensual</h3><p class="hint">Cuánto quieres ahorrar cada mes. Se mide con lo que realmente sumas a tu cuenta: ingresos menos gastos con Saldo Disponible.</p>' +
+      '<div class="seg" id="m-seg"><button class="' + (tipo === "pct" ? "on" : "") + '" data-a="metaTipo" data-v="pct">% de ingresos</button><button class="' + (tipo === "monto" ? "on" : "") + '" data-a="metaTipo" data-v="monto">Monto fijo</button></div>' +
+      '<div><label class="l" id="m-lbl">' + (tipo === "pct" ? "Porcentaje (%)" : "Monto al mes (S/)") + '</label><input class="field" id="m-val" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" autocomplete="off" value="' + (m ? m.valor : "") + '" placeholder="' + (tipo === "pct" ? "Ej.: 20" : "Ej.: 600") + '"></div>' +
+      '<button class="btn" data-a="metaGuardar">Guardar meta</button>' + (m ? '<button class="btn sec2" data-a="metaQuitar">Quitar meta</button>' : "") + '<button class="btn sec2" data-a="cerrar">Cancelar</button>');
+  }
   function vistaInicio() {
     var E = S.estado;
     if (!E) return skel(3);
@@ -188,6 +207,7 @@
     h += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="lbl">Gastado este mes</span><span class="hint">de ingresos ' + money(E.ingresos) + '</span></div>' +
       '<div class="med">' + money(E.gastos) + '</div><div class="bar' + (E.gastos > E.ingresos ? ' b' : '') + '"><i ' + wi(pc) + '></i></div>' +
       '<div class="hint" style="margin-top:6px">💵 Saldo ' + money(E.gastosSaldo) + ' · 💳 Tarjeta ' + money(E.gastosTarjeta) + '</div></div>';
+    h += metaCard(E);
     if (E.fijosPendientes > 0) h += '<button class="alert" data-a="ir" data-v="fijos"><span>⚠️</span><span style="flex:1;text-align:left">Fijos pendientes: <b>' + money(E.fijosPendientesMonto) + '</b> (' + E.fijosPendientes + ')</span><span class="chev">›</span></button>';
     var conTope = E.presupuesto.filter(function (p) { return p.tope && !p.referencia; }).sort(function (a, b) { return (b.pct || 0) - (a.pct || 0); }).slice(0, 4);
     if (conTope.length) {
@@ -498,6 +518,24 @@
     if (pag.length) h += '<div class="sec"><span>Ya pagados</span></div><div class="card" style="padding:4px 15px">' + pag.map(function (x) { return '<div class="cb done"><span class="box">✓</span><span style="flex:1">' + esc(x.nombre) + '</span><b>' + money(x.monto) + '</b></div>'; }).join("") + '</div>';
     return h;
   }
+  function comparaCard(D) {
+    var ant = D.mesAnteriorNombre || "el mes anterior";
+    var filas = D.categorias.filter(function (c) { return c.monto > 0 || c.mesAnterior > 0; });
+    if (!filas.length) return "";
+    filas.sort(function (x, y) { return Math.abs(y.monto - y.mesAnterior) - Math.abs(x.monto - x.mesAnterior); });
+    var mx = Math.max.apply(null, filas.map(function (c) { return Math.max(c.monto, c.mesAnterior); }).concat([1]));
+    var tot = D.gastos, tAnt = D.mesAnteriorGastos, d = tot - tAnt, dp = tAnt > 0 ? Math.round(d / tAnt * 100) : null;
+    var resumen = '<div class="kv"><span>Este mes</span><b>' + money(tot) + '</b></div><div class="kv"><span>' + esc(ant) + '</span><b>' + money(tAnt) + '</b></div>' +
+      '<div class="kv"><span>Diferencia</span><b style="color:' + (d > 0 ? "var(--bad)" : "var(--ok)") + '">' + (d > 0 ? "▲ " : d < 0 ? "▼ " : "") + money(Math.abs(d)) + (dp === null ? "" : " (" + (d > 0 ? "+" : d < 0 ? "−" : "") + Math.abs(dp) + " %)") + '</b></div>';
+    var barras = filas.map(function (c) {
+      var dd = c.monto - c.mesAnterior;
+      return '<div style="padding:9px 0;border-top:1px solid var(--line)"><div style="display:flex;justify-content:space-between;gap:8px;font-size:14px"><b style="font-weight:600">' + c.emoji + ' ' + esc(c.categoria) + '</b>' +
+        '<span style="font-variant-numeric:tabular-nums;font-weight:600;color:' + (dd > 0.5 ? "var(--bad)" : dd < -0.5 ? "var(--ok)" : "var(--mut)") + '">' + (dd > 0.5 ? "▲ " : dd < -0.5 ? "▼ " : "= ") + money(Math.abs(dd)) + '</span></div>' +
+        '<div class="bar g"><i ' + wi(c.monto / mx * 100) + '></i></div><div class="bar" style="margin-top:4px;height:6px"><i style="background:var(--field);width:' + Math.round(c.mesAnterior / mx * 100) + '%"></i></div>' +
+        '<div class="hint" style="margin-top:4px;display:flex;justify-content:space-between;gap:8px"><span>Este mes ' + money(c.monto) + '</span><span>' + esc(ant) + ' ' + money(c.mesAnterior) + '</span></div></div>';
+    }).join("");
+    return '<div class="sec"><span>Comparación con ' + esc(ant) + '</span></div><div class="card">' + resumen + '<p class="hint" style="margin:8px 0 2px">Barra azul = este mes · barra gris = ' + esc(ant) + '</p>' + barras + '</div>';
+  }
   function vistaInformes() {
     var D = S.IN.data, h = '<div class="mes"><button data-a="mesI" data-v="-1">‹</button><b>' + mesNombre(S.IN.mes) + '</b><button data-a="mesI" data-v="1">›</button></div>';
     if (!D) return h + skel(3);
@@ -505,11 +543,7 @@
     h += '<div class="card"><div class="kv"><span>Ingresos</span><b>' + money(D.ingresos) + '</b></div><div class="kv"><span>Gastos</span><b>' + money(D.gastos) + '</b></div><div class="kv"><span>Vs. mes anterior</span><b style="color:' + (dif > 0 ? 'var(--bad)' : 'var(--ok)') + '">' + (dif > 0 ? "▲ " : "▼ ") + money(Math.abs(dif)) + '</b></div><div class="kv"><span>Promedio por día</span><b>' + money(D.promedioDiario) + '</b></div></div>';
     if (D.categorias.length) {
       var tot = D.categorias.reduce(function (s, c) { return s + c.monto; }, 0) || 1;
-      h += donutCard(D) + '<div class="sec"><span>Detalle por categoría</span></div><div class="card">' + D.categorias.filter(function (c) { return c.monto > 0; }).map(function (c) {
-        var p = Math.round(c.monto / tot * 100);
-        return '<div style="padding:6px 0"><div style="display:flex;justify-content:space-between;font-size:14px;gap:8px"><b style="font-weight:600">' + c.emoji + ' ' + esc(c.categoria) + '</b><span style="color:var(--mut);font-variant-numeric:tabular-nums">' + money(c.monto) + ' · ' + p + '%</span></div><div class="bar g"><i ' + wi(p) + '></i></div>' +
-          (c.mesAnterior > 0 ? '<div class="hint" style="margin-top:3px">Mes anterior: ' + money(c.mesAnterior) + '</div>' : "") + '</div>';
-      }).join("") + '</div>';
+      h += donutCard(D) + comparaCard(D);
     }
     var mx = Math.max.apply(null, D.meses.map(function (m) { return Math.max(m.ingresos, m.gastos); }).concat([1]));
     h += '<div class="sec"><span>El año · ingresos y gastos</span></div><div class="card"><div class="mini" style="height:130px;gap:6px">' + D.meses.map(function (m) {
@@ -557,7 +591,7 @@
       [[false, "Flotante"], [true, "Pegada abajo"]].map(function (o) { return '<button class="' + ((PREF.dock !== false) === o[0] ? "on" : "") + '" data-a="dock" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
       '</div><p class="hint" style="margin-top:6px">Si ves una franja vacía bajo la barra, prueba «Pegada abajo».</p></div>';
     h += '<div class="card"><div class="lbl">Privacidad y seguridad</div>' +
-      '<button class="cb' + (PREF.oculto ? " on" : "") + '" data-a="ojo" style="margin-top:4px"><span class="box">' + (PREF.oculto ? "✓" : "") + '</span><span style="flex:1">Ocultar los montos (también con el ojo del encabezado)</span></button>' +
+      '<button class="cb' + (PREF.ocultarAlAbrir ? " on" : "") + '" data-a="ocultarInicio" style="margin-top:4px"><span class="box">' + (PREF.ocultarAlAbrir ? "✓" : "") + '</span><span style="flex:1">Ocultar TODOS los montos al abrir la app (el ojo de arriba los muestra u oculta)</span></button>' +
       (PREF.lock && !cfg.demo ?
         '<div class="kv"><span>🔒 Candado activado</span><b>' + PREF.lock.len + ' dígitos</b></div><label class="l" style="margin-top:8px">Pedir el código</label><div class="mset">' +
         [[0, "Siempre"], [1, "Tras 1 min"], [5, "Tras 5 min"]].map(function (o) { return '<button class="' + (PREF.lock.min === o[0] ? "on" : "") + '" data-a="lockMin" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
@@ -689,10 +723,15 @@
     salir: function () { cfg = null; S.estado = null; S.G.data = null; store("mg_cfg", null); store("mg_estado", null); S.setupMsg = ""; S.tab = "inicio"; S.sub = null; render(); },
     dock: function (v) { PREF.dock = (v === "true"); guardarPref(); aplicarPantalla(); render(); },
     ver: function (k) {
-      if (PREF.oculto) { toast("Los montos están ocultos con el ojo de arriba"); return; }
+      if (S.ocultoTodo) { toast("Usa el ojo de arriba para mostrar los montos"); return; }
       S.ver[k] = !S.ver[k]; render(); if (visK(k)) contarNumeros();
     },
-    ojo: function () { PREF.oculto = !PREF.oculto; guardarPref(); render(); },
+    ojo: function () {
+      if (todoVisible()) { S.ocultoTodo = true; S.ver.ahorro = false; S.ver.deuda = false; }
+      else { S.ocultoTodo = false; S.ver.ahorro = true; S.ver.deuda = true; }
+      render(); if (todoVisible()) contarNumeros();
+    },
+    ocultarInicio: function () { PREF.ocultarAlAbrir = !PREF.ocultarAlAbrir; guardarPref(); render(); },
     tema: function (v) { PREF.tema = v; guardarPref(); aplicarTema(); render(); },
     enviarCola: function () { enviarCola(true); },
     colaDescartar: function (v) { store(COLA_K, cola().filter(function (x) { return x.id !== v; })); render(); },
@@ -733,6 +772,14 @@
         '<button class="btn bad" data-a="lockReset">Cerrar sesión y entrar</button><button class="btn sec2" data-a="cerrar">Cancelar</button>');
     },
     lockReset: function () { PREF.lock = null; guardarPref(); S.locked = false; cerrarHoja(); acciones.salir(); },
+    hojaMeta: hojaMeta,
+    metaTipo: function (v) {
+      S.metaTipo = v;
+      Array.prototype.forEach.call(document.querySelectorAll("#m-seg button"), function (b) { b.classList.toggle("on", b.getAttribute("data-v") === v); });
+      $("#m-lbl").textContent = v === "pct" ? "Porcentaje (%)" : "Monto al mes (S/)"; $("#m-val").placeholder = v === "pct" ? "Ej.: 20" : "Ej.: 600";
+    },
+    metaGuardar: function () { app("meta_ahorro_guardar", { tipo: S.metaTipo, valor: $("#m-val").value.trim().replace(",", ".") }).then(function (j) { cerrarHoja(); toast(j.mensaje, "ok"); cargarEstado(true); }).catch(fail); },
+    metaQuitar: function () { app("meta_ahorro_guardar", { valor: 0 }).then(function (j) { cerrarHoja(); toast(j.mensaje, "ok"); cargarEstado(true); }).catch(fail); },
     conectar: conectar,
     demo: function () { cfg = { demo: true }; store("mg_cfg", cfg); S.estado = null; S.tab = "inicio"; cargarEstado(false); render(); }
   };

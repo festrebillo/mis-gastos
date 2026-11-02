@@ -59,6 +59,12 @@ La app se actualiza sola al volver a abrirla con internet. Si cambias el script,
 - **Barra inferior pegada al borde** (por defecto; en Ajustes se puede volver a «Flotante»). Encabezado con degradado que parte del mismo azul que la barra de estado, sin línea de unión.
 - Barra de estado en modo «negro» (ventana completa en iPhone 15 Pro Max).
 
+## Novedades v1.5 (requiere el script v3.4.0)
+- **Ojos:** solo «Ahorro disponible hoy» y «Deuda de la tarjeta» arrancan ocultos cada vez que abres la app (ojito en cada tarjeta). **Todo lo demás se ve.** El **ojo del encabezado** muestra u oculta **todos** los montos de todas las pantallas (si todo está visible, los oculta; si no, los muestra). En Ajustes hay una casilla para que TODO arranque oculto.
+- **Meta de ahorro mensual:** en Inicio, define un % de tus ingresos o un monto fijo; la barra mide lo que realmente sumas a la cuenta (ingresos − gastos con Saldo Disponible). Se guarda en el script.
+- **Comparación entre meses** (Informes): total del mes contra el anterior y, por categoría, barra azul (este mes) contra barra gris (mes anterior) con ▲/▼ y la diferencia. Cambia de mes con las flechas.
+- **Barra inferior pegada al borde**, de color sólido, para que no quede ninguna franja distinta debajo.
+
 ## Límites conocidos
 - Editar, borrar, pagar fijos y actualizar la tarjeta necesitan internet (solo registrar gasto/ingreso funciona sin conexión).
 - Las notificaciones push de iPhone solo existen para páginas agregadas a la pantalla de inicio y no están incluidas en esta versión.
