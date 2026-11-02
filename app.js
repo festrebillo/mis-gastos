@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.1";
+  var VERSION = "1.2";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -47,6 +47,8 @@
     eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
     eyeoff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 6.1A10 10 0 0 1 12 6c6.4 0 10 6 10 6a17 17 0 0 1-3.2 3.9M6.6 6.7C3.9 8.4 2 12 2 12s3.6 6 10 6c1.6 0 3-.4 4.3-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>',
     lock: '<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+    edit: '<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
+    trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
     cog: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2l.4 2.7h4l.4-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>'
   };
 
@@ -84,14 +86,39 @@
 
   /* ---------- pantallas ---------- */
   function header(peq, tit, accion) {
-    return '<div class="hdr"><div><small>' + esc(peq) + '</small><h1>' + tit + '</h1></div>' + (accion || "") + '</div>';
+    return '<div><small>' + esc(peq) + '</small><h1>' + tit + '</h1></div>' + (accion || "");
   }
-  function tabs() {
-    var t = S.tab;
-    function b(id, ico, txt) { return '<button class="tab' + (t === id ? " on" : "") + '" data-a="tab" data-v="' + id + '">' + I[ico] + txt + '</button>'; }
-    return '<nav class="tabs">' + b("inicio", "home", "Inicio") + b("gastos", "list", "Gastos") +
+  function tabsHtml() {
+    function b(id, ico, txt) { return '<button class="tab" data-a="tab" data-v="' + id + '">' + I[ico] + txt + '</button>'; }
+    return '<nav class="tabs" id="tabs"><span class="ind" id="ind"></span>' + b("inicio", "home", "Inicio") + b("gastos", "list", "Gastos") +
       '<button class="tab plus" data-a="tab" data-v="registrar"><span class="c">' + I.plus + '</span>Registrar</button>' +
       b("tarjeta", "card", "Tarjeta") + b("mas", "dots", "Más") + '</nav>';
+  }
+  function marcarTabs() {
+    var orden = ["inicio", "gastos", "registrar", "tarjeta", "mas"], i = Math.max(0, orden.indexOf(S.tab));
+    Array.prototype.forEach.call(document.querySelectorAll("#tabs .tab"), function (b) { b.classList.toggle("on", b.getAttribute("data-v") === S.tab); });
+    var ind = $("#ind"); if (ind) { ind.style.transform = "translateX(" + (i * 100) + "%)"; ind.style.opacity = S.tab === "registrar" ? "0" : "1"; }
+  }
+  /* barras que crecen al entrar la pantalla y números que suben contando */
+  function wi(p) { p = Math.max(0, Math.min(100, Number(p) || 0)); return S.anim ? 'style="width:0%" data-w="' + p + '"' : 'style="width:' + p + '%"'; }
+  function reducido() { return !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); }
+  function animar() {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-w]"), function (e) { requestAnimationFrame(function () { requestAnimationFrame(function () { e.style.width = e.getAttribute("data-w") + "%"; }); }); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-da]"), function (e) { requestAnimationFrame(function () { requestAnimationFrame(function () { e.style.strokeDasharray = e.getAttribute("data-da"); }); }); });
+    if (PREF.oculto || reducido()) return;
+    Array.prototype.forEach.call(document.querySelectorAll("[data-n]"), function (e) {
+      var fin = parseFloat(e.getAttribute("data-n")); if (!isFinite(fin)) return;
+      var t0 = performance.now(), dur = 850;
+      (function f(t) { var k = Math.min(1, (t - t0) / dur), v = fin * (1 - Math.pow(1 - k, 3)); e.innerHTML = bigMoney(v); if (k < 1) requestAnimationFrame(f); })(t0);
+    });
+  }
+  function skel(n) { var h = ""; for (var i = 0; i < (n || 3); i++) h += '<div class="sk" style="height:' + (i === 0 ? 132 : 104) + 'px"></div>'; return h; }
+  function ocupado(txt) { $("#busy-t").textContent = txt || "Cargando…"; $("#busy").classList.add("on"); }
+  function libre() { $("#busy").classList.remove("on"); }
+  function celebrar() { var o = $("#okpop"); o.classList.remove("go"); void o.offsetWidth; o.classList.add("go"); }
+  function limpiarNum(v) { v = String(v).replace(/[^0-9.,]/g, ""); var i = v.search(/[.,]/); return i > -1 ? v.slice(0, i + 1) + v.slice(i + 1).replace(/[.,]/g, "") : v; }
+  function swr(inner, editA, fila, tipo) {
+    return '<div class="swr"><div class="acts"><button class="ed" data-a="' + editA + '" data-v="' + fila + '">' + I.edit + 'Editar</button><button class="bo" data-a="borrarAsk" data-v="' + tipo + ':' + fila + '">' + I.trash + 'Borrar</button></div><div class="fg">' + inner + '</div></div>';
   }
   var refreshBtn = '<button class="ic" data-a="refrescar" aria-label="Actualizar">' + I.refresh + '</button>';
   function accionesHdr() {
@@ -101,16 +128,24 @@
   function render() {
     var el = $("#app");
     var ae = document.activeElement, aeId = ae && ae.id === "g-q" ? ae.id : null, aeSel = aeId ? ae.selectionStart : 0;
-    if (!cfg) { el.innerHTML = vistaSetup(); return; }
-    if (S.locked) { cerrarHoja(); el.innerHTML = vistaLock(); return; }
+    if (!cfg) { el.removeAttribute("data-skel"); el.innerHTML = vistaSetup(); return; }
+    if (S.locked) { cerrarHoja(); el.removeAttribute("data-skel"); el.innerHTML = vistaLock(); return; }
+    if (el.getAttribute("data-skel") !== "1") { el.innerHTML = '<div class="hdr" id="hdr"></div><main id="main"></main>' + tabsHtml(); el.setAttribute("data-skel", "1"); S.vk = null; }
     var h = "", m = "";
     var E = S.estado;
-    if (S.tab === "inicio") { h = header("Mis Gastos", "Hola, " + esc(E ? E.nombre : "") + ' · <b>' + esc(E ? E.mes : "") + '</b>', accionesHdr()); m = vistaInicio(); }
+    if (S.tab === "inicio") { h = header(E ? E.mes + " " + E.anio : "Mis Gastos", "Hola, <b>" + esc(E ? E.nombre : "") + '</b>', accionesHdr()); m = vistaInicio(); }
     else if (S.tab === "registrar") { h = header("Nuevo registro", "Registrar"); m = vistaRegistrar(); }
     else if (S.tab === "gastos") { h = header("Historial", "Gastos", accionesHdr()); m = vistaGastos(); }
     else if (S.tab === "tarjeta") { h = header("Tarjeta de crédito", "Tarjeta y ahorro", accionesHdr()); m = vistaTarjeta(); }
     else { var tt2 = { presupuesto: "Presupuesto", fijos: "Gastos fijos", informes: "Informes", ajustes: "Ajustes" }[S.sub] || "Más"; h = header(S.sub ? "Más" : "Menú", tt2); m = vistaMas(); }
-    el.innerHTML = h + '<main id="main">' + m + '</main>' + tabs();
+    var main = $("#main"), vk = S.tab + "/" + (S.sub || ""), sc = S.vk === vk ? main.scrollTop : 0;
+    $("#hdr").innerHTML = h; main.innerHTML = m; main.scrollTop = sc; S.vk = vk;
+    marcarTabs();
+    if (S.anim) {
+      main.classList.add("anim");
+      Array.prototype.forEach.call(main.children, function (c, i) { c.style.setProperty("--i", Math.min(i, 8)); });
+      animar(); clearTimeout(S.ta); S.ta = setTimeout(function () { main.classList.remove("anim"); }, 1200); S.anim = false;
+    } else main.classList.remove("anim");
     if (S.tab === "registrar") enlazarRegistrar();
     if (aeId && $("#" + aeId)) { var n = $("#" + aeId); n.focus(); try { n.setSelectionRange(aeSel, aeSel); } catch (x) {} }
   }
@@ -125,22 +160,22 @@
   }
   function vistaInicio() {
     var E = S.estado;
-    if (!E) return '<div class="empty"><span class="spin" style="border-color:#2A5DA8;border-right-color:transparent"></span><p style="margin-top:10px">Cargando tus datos…</p></div>';
+    if (!E) return skel(3);
     var h = bannerCola() + (S.offline ? '<div class="hint" style="text-align:center">📴 Sin conexión · mostrando tus últimos datos guardados</div>' : ""), pill;
     if (E.banco === null) pill = '<span class="pill w">Escribe el saldo de tu banco en «Tarjeta» para comprobar</span>';
     else if (Math.abs(E.diferencia) < 0.005) pill = '<span class="pill">✔ Cuadra con tu banco</span>';
     else pill = '<span class="pill w">⚠ Difiere ' + money(Math.abs(E.diferencia)) + ' con tu banco</span>';
-    h += '<div class="card"><div class="lbl">Ahorro disponible hoy</div><div class="big">' + bigMoney(E.ahorro) + '</div>' + pill +
+    h += '<div class="card"><div class="lbl">Ahorro disponible hoy</div><div class="big" data-n="' + E.ahorro + '">' + bigMoney(E.ahorro) + '</div>' + pill +
       (E.reserva > 0 ? '<div class="kv" style="margin-top:8px"><span>🔒 Reservado para fijos</span><b>' + money(E.reserva) + '</b></div>' : "") + '</div>';
     var t = E.tarjeta;
     if (t) {
-      h += '<div class="cc"><div class="lbl">Deuda de la tarjeta</div><div class="big">' + bigMoney(t.deuda) + '</div>' +
+      h += '<div class="cc"><div class="lbl">Deuda de la tarjeta</div><div class="big" data-n="' + t.deuda + '">' + bigMoney(t.deuda) + '</div>' +
         '<div class="two"><div>A pagar antes del ' + esc(t.limite ? fechaCorta(t.limite).slice(0, 5) : "—") + '<b>' + money(t.pendiente) + '</b></div>' +
         '<div>Quedan<b class="w">' + (t.diasLimite === null ? "—" : t.diasLimite + " días") + '</b></div></div></div>';
     }
     var pc = E.ingresos > 0 ? Math.min(100, Math.round(E.gastos / E.ingresos * 100)) : 0;
     h += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="lbl">Gastado este mes</span><span class="hint">de ingresos ' + money(E.ingresos) + '</span></div>' +
-      '<div class="med">' + money(E.gastos) + '</div><div class="bar' + (E.gastos > E.ingresos ? ' b' : '') + '"><i style="width:' + pc + '%"></i></div>' +
+      '<div class="med">' + money(E.gastos) + '</div><div class="bar' + (E.gastos > E.ingresos ? ' b' : '') + '"><i ' + wi(pc) + '></i></div>' +
       '<div class="hint" style="margin-top:6px">💵 Saldo ' + money(E.gastosSaldo) + ' · 💳 Tarjeta ' + money(E.gastosTarjeta) + '</div></div>';
     if (E.fijosPendientes > 0) h += '<button class="alert" data-a="ir" data-v="fijos"><span>⚠️</span><span style="flex:1;text-align:left">Fijos pendientes: <b>' + money(E.fijosPendientesMonto) + '</b> (' + E.fijosPendientes + ')</span><span class="chev">›</span></button>';
     var conTope = E.presupuesto.filter(function (p) { return p.tope && !p.referencia; }).sort(function (a, b) { return (b.pct || 0) - (a.pct || 0); }).slice(0, 4);
@@ -158,7 +193,7 @@
     var pct = p.tope ? Math.min(100, p.pct || 0) : 0, c = claseEstado(p.pct);
     var inner = '<div style="display:flex;justify-content:space-between;gap:8px;font-size:14px"><b style="font-weight:600">' + p.emoji + ' ' + esc(p.categoria) + '</b><span style="color:var(--mut);font-variant-numeric:tabular-nums">' +
       money(p.gastado) + (p.tope ? ' / ' + money(p.tope) + (p.referencia ? ' ref.' : '') : "") + '</span></div>' +
-      (p.tope ? '<div class="bar ' + c + '"><i style="width:' + pct + '%"></i></div><div class="hint" style="margin-top:4px">' + textoEstado(p.pct) + (p.referencia ? " (promedio de meses anteriores)" : "") + '</div>' : '<div class="hint" style="margin-top:2px">Sin tope · toca para fijar uno</div>');
+      (p.tope ? '<div class="bar ' + c + '"><i ' + wi(pct) + '></i></div><div class="hint" style="margin-top:4px">' + textoEstado(p.pct) + (p.referencia ? " (promedio de meses anteriores)" : "") + '</div>' : '<div class="hint" style="margin-top:2px">Sin tope · toca para fijar uno</div>');
     return editable ? '<button class="it" style="display:block" data-a="topeEditar" data-v="' + esc(p.categoria) + '">' + inner + '</button>' : '<div style="padding:7px 0">' + inner + '</div>';
   }
 
@@ -166,7 +201,7 @@
   function vistaRegistrar() {
     var F = S.F, E = S.estado, h = bannerCola();
     h += '<div class="seg" role="tablist"><button class="' + (F.modo === "gasto" ? "on" : "") + '" data-a="modo" data-v="gasto">Gasto</button><button class="' + (F.modo === "ingreso" ? "on" : "") + '" data-a="modo" data-v="ingreso">Ingreso</button></div>';
-    h += '<div class="amt"><span>S/</span><input id="f-monto" inputmode="decimal" autocomplete="off" placeholder="0.00" value="' + esc(F.monto) + '" aria-label="Monto"></div>';
+    h += '<div class="amt"><span>S/</span><input id="f-monto" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" autocomplete="off" placeholder="0.00" value="' + esc(F.monto) + '" aria-label="Monto"></div>';
     if (F.modo === "gasto") {
       h += '<div><label class="l" for="f-lugar">Lugar</label><input class="field" id="f-lugar" autocomplete="off" autocapitalize="words" placeholder="¿Dónde gastaste?" value="' + esc(F.lugar) + '"><div class="chips" id="f-sug"></div></div>';
       h += '<div><label class="l">Categoría</label><button class="catline" id="f-cat" data-a="elegirCat" style="width:100%">' + catTxt() + '<em>' + (F.catAuto && F.cat ? "Sugerida · Cambiar" : "Cambiar") + '</em></button></div>';
@@ -193,7 +228,7 @@
   var tl;
   function enlazarRegistrar() {
     var m = $("#f-monto"), l = $("#f-lugar"), d = $("#f-det"), ds = $("#f-desc");
-    if (m) m.addEventListener("input", function () { S.F.monto = m.value; });
+    if (m) m.addEventListener("input", function () { var v = limpiarNum(m.value); if (v !== m.value) m.value = v; S.F.monto = v; });
     if (d) d.addEventListener("input", function () { S.F.detalle = d.value; });
     if (ds) ds.addEventListener("input", function () { S.F.desc = ds.value; });
     if (l) {
@@ -229,7 +264,7 @@
     call(body).then(function (j) {
       if (j.status === "error") throw new Error(j.mensaje);
       var modo = F.modo; S.F = nuevoForm(); S.F.modo = modo; S.G.data = null; S.T.cargado = false;
-      toast(j.mensaje || "✅ Guardado", "ok", 4800); cargarEstado(true); render(); enviarCola(false);
+      toast(j.mensaje || "✅ Guardado", "ok", 4800); celebrar(); cargarEstado(true); render(); enviarCola(false);
     }).catch(function (e) {
       F.guardando = false;
       if (esRed(e)) {
@@ -280,7 +315,7 @@
     h += '<div class="search">' + I.search + '<input id="g-q" placeholder="Buscar lugar o detalle" value="' + esc(G.q) + '" autocomplete="off"></div>';
     h += '<div class="filt"><button class="' + (!G.metodo ? "on" : "") + '" data-a="metG" data-v="">Todos</button><button class="' + (G.metodo === "Saldo Disponible" ? "on" : "") + '" data-a="metG" data-v="Saldo Disponible">💵 Saldo</button><button class="' + (G.metodo === "Tarjeta de Crédito" ? "on" : "") + '" data-a="metG" data-v="Tarjeta de Crédito">💳 Tarjeta</button><button class="' + (G.cat ? "on" : "") + '" data-a="catG">' + (G.cat ? esc(G.cat) : "Categoría ▾") + '</button></div>';
     var D = G.data;
-    if (!D) return h + '<div class="empty"><span class="spin" style="border-color:#2A5DA8;border-right-color:transparent"></span></div>';
+    if (!D) return h + skel(3);
     h += '<div class="card" style="padding:10px 15px"><div class="kv"><span>Total del mes</span><b>' + money(D.total) + '</b></div><div class="kv"><span>💵 Saldo · 💳 Tarjeta</span><b>' + money(D.totalSaldo) + ' · ' + money(D.totalTarjeta) + '</b></div></div>';
     if (!D.gastos.length) h += '<div class="empty">No hay gastos con esos filtros.</div>';
     var dia = "", abierto = false;
@@ -289,16 +324,16 @@
       if (k !== dia) {
         if (abierto) h += '</div>'; dia = k;
         var tot = D.gastos.filter(function (x) { return x.fecha.slice(0, 10) === k; }).reduce(function (s, x) { return s + x.monto; }, 0);
-        h += '<div class="day"><span>' + etiquetaDia(k) + '</span><span>' + money(tot) + '</span></div><div class="card" style="padding:4px 15px">'; abierto = true;
+        h += '<div class="day"><span>' + etiquetaDia(k) + '</span><span>' + money(tot) + '</span></div><div class="card lista">'; abierto = true;
       }
-      h += '<button class="it" data-a="verGasto" data-v="' + g.fila + '"><span class="ico">' + g.emoji + '</span><span class="t"><b>' + esc(g.lugar) + '</b><small>' + esc(g.categoria) + (g.detalle && !g.fijo ? " · " + esc(g.detalle) : "") + '</small></span>' +
-        '<span class="m">' + money(g.monto) + '<small class="' + (g.metodo === "Tarjeta de Crédito" ? "tc" : "") + '">' + (g.metodo === "Tarjeta de Crédito" ? "💳 Tarjeta" : "Saldo") + '</small></span></button>';
+      h += swr('<button class="it" data-a="verGasto" data-v="' + g.fila + '"><span class="ico">' + g.emoji + '</span><span class="t"><b>' + esc(g.lugar) + '</b><small>' + esc(g.categoria) + (g.detalle && !g.fijo ? " · " + esc(g.detalle) : "") + '</small></span>' +
+        '<span class="m">' + money(g.monto) + '<small class="' + (g.metodo === "Tarjeta de Crédito" ? "tc" : "") + '">' + (g.metodo === "Tarjeta de Crédito" ? "💳 Tarjeta" : "Saldo") + '</small></span></button>', "editarGasto", g.fila, "gasto");
     });
     if (abierto) h += '</div>';
     if (D.ingresos && D.ingresos.length) {
-      h += '<div class="sec"><span>Ingresos del mes</span><span>' + money(D.totalIngresos) + '</span></div><div class="card" style="padding:4px 15px">';
+      h += '<div class="sec"><span>Ingresos del mes</span><span>' + money(D.totalIngresos) + '</span></div><div class="card lista">';
       D.ingresos.forEach(function (x) {
-        h += '<button class="it" data-a="verIngreso" data-v="' + x.fila + '"><span class="ico">💰</span><span class="t"><b>' + esc(x.descripcion) + '</b><small>' + fechaCorta(x.fecha) + '</small></span><span class="m" style="color:var(--ok)">+' + money(x.monto) + '</span></button>';
+        h += swr('<button class="it" data-a="verIngreso" data-v="' + x.fila + '"><span class="ico">💰</span><span class="t"><b>' + esc(x.descripcion) + '</b><small>' + fechaCorta(x.fecha) + '</small></span><span class="m" style="color:var(--ok)">+' + money(x.monto) + '</span></button>', "verIngreso", x.fila, "ingreso");
       });
       h += '</div>';
     }
@@ -311,7 +346,7 @@
   }
   function cargarGastos() {
     var G = S.G; G.cargando = true;
-    app("gastos", { mes: G.mes, q: G.q, categoria: G.cat, metodo: G.metodo }).then(function (j) { G.data = j; G.cargando = false; if (S.tab === "gastos") render(); })
+    app("gastos", { mes: G.mes, q: G.q, categoria: G.cat, metodo: G.metodo }).then(function (j) { if (G.animar) { S.anim = true; G.animar = false; } G.data = j; G.cargando = false; if (S.tab === "gastos") render(); })
       .catch(function (e) { G.cargando = false; fail(e); });
   }
   function hojaGasto(fila) {
@@ -324,7 +359,7 @@
     var cats = (S.estado && S.estado.categoriasActivas) || [{ nombre: g.categoria, emoji: g.emoji }];
     abrirHoja('<div class="grab"></div><h3>Editar gasto</h3>' +
       '<div><label class="l">Lugar</label><input class="field" id="e-lugar" value="' + esc(g.lugar) + '"></div>' +
-      '<div class="row2"><div><label class="l">Monto (S/)</label><input class="field" id="e-monto" inputmode="decimal" value="' + g.monto + '"></div><div><label class="l">Fecha</label><input class="field" id="e-fecha" type="date" value="' + g.fecha.slice(0, 10) + '"></div></div>' +
+      '<div class="row2"><div><label class="l">Monto (S/)</label><input class="field" id="e-monto" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" autocomplete="off" value="' + g.monto + '"></div><div><label class="l">Fecha</label><input class="field" id="e-fecha" type="date" value="' + g.fecha.slice(0, 10) + '"></div></div>' +
       '<div><label class="l">Categoría</label><select class="field" id="e-cat">' + cats.map(function (c) { return '<option' + (c.nombre === g.categoria ? " selected" : "") + ' value="' + esc(c.nombre) + '">' + c.emoji + ' ' + esc(c.nombre) + '</option>'; }).join("") + '</select></div>' +
       '<div><label class="l">Pagado con</label><select class="field" id="e-met"><option value="Saldo Disponible"' + (g.metodo !== "Tarjeta de Crédito" ? " selected" : "") + '>💵 Saldo Disponible</option><option value="Tarjeta de Crédito"' + (g.metodo === "Tarjeta de Crédito" ? " selected" : "") + '>💳 Tarjeta de Crédito</option></select></div>' +
       '<div><label class="l">Detalle</label><input class="field" id="e-det" value="' + esc(g.detalle) + '"></div>' +
@@ -340,7 +375,7 @@
     var x = S.G.data.ingresos.filter(function (y) { return y.fila === fila; })[0]; if (!x) return;
     abrirHoja('<div class="grab"></div><h3>💰 ' + esc(x.descripcion) + '</h3>' +
       '<div><label class="l">Descripción</label><input class="field" id="i-desc" value="' + esc(x.descripcion) + '"></div>' +
-      '<div class="row2"><div><label class="l">Monto (S/)</label><input class="field" id="i-monto" inputmode="decimal" value="' + x.monto + '"></div><div><label class="l">Fecha</label><input class="field" id="i-fecha" type="date" value="' + x.fecha.slice(0, 10) + '"></div></div>' +
+      '<div class="row2"><div><label class="l">Monto (S/)</label><input class="field" id="i-monto" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" autocomplete="off" value="' + x.monto + '"></div><div><label class="l">Fecha</label><input class="field" id="i-fecha" type="date" value="' + x.fecha.slice(0, 10) + '"></div></div>' +
       '<button class="btn" data-a="guardarIngreso" data-v="' + x.fila + '">Guardar cambios</button><button class="btn bad" data-a="borrarAsk" data-v="ingreso:' + x.fila + '">Borrar ingreso</button><button class="btn sec2" data-a="cerrar">Cancelar</button>');
   }
   function guardarIngreso(fila) {
@@ -361,10 +396,10 @@
   /* ---- Tarjeta y ahorro ---- */
   function vistaTarjeta() {
     var E = S.estado, h = "";
-    if (!E) return '<div class="empty"><span class="spin" style="border-color:#2A5DA8;border-right-color:transparent"></span></div>';
+    if (!E) return skel(3);
     var t = E.tarjeta;
     if (t) {
-      h += '<div class="cc"><div class="lbl">Deuda real</div><div class="big">' + bigMoney(t.deuda) + '</div><div class="two"><div>Fecha límite (automática)<b>' + esc(fechaCorta(t.limite)) + '</b></div><div>Quedan<b class="w">' + (t.diasLimite === null ? "—" : t.diasLimite + " días") + '</b></div></div></div>';
+      h += '<div class="cc"><div class="lbl">Deuda real</div><div class="big" data-n="' + t.deuda + '">' + bigMoney(t.deuda) + '</div><div class="two"><div>Fecha límite (automática)<b>' + esc(fechaCorta(t.limite)) + '</b></div><div>Quedan<b class="w">' + (t.diasLimite === null ? "—" : t.diasLimite + " días") + '</b></div></div></div>';
       h += '<div class="card"><div class="kv"><span>A pagar antes de la fecha límite</span><b>' + money(t.pendiente) + '</b></div><div class="kv"><span>Por facturar (próximo estado)</span><b>' + money(t.porFacturar) + '</b></div><div class="kv"><span>Compras tras el cierre (día ' + t.diaCierre + ')</span><b>' + money(t.comprasCiclo) + '</b></div><div class="kv"><span>Último cierre</span><b>' + esc(fechaCorta(t.ultimoCierre)) + '</b></div></div>';
       h += '<button class="btn sec2" data-a="hojaTarjeta">Llegó un estado de cuenta nuevo</button>';
     } else h += '<div class="card"><p class="hint">Aún no está configurada la hoja «Tarjeta» en tu Excel (menú 💰 Finanzas → Crear hojas nuevas).</p></div>';
@@ -380,15 +415,15 @@
     }
     if (E.metas && E.metas.length) {
       h += '<div class="sec"><span>Metas · con ' + money(E.ahorro) + ' disponibles</span></div><div class="card">' + E.metas.map(function (m) {
-        return '<div class="goal"><div class="h"><b>' + esc(m.nombre) + '</b><span>' + (m.lograda ? "✔ lograda" : m.avance + "% de " + nf(m.objetivo)) + '</span></div><div class="bar g"><i style="width:' + Math.min(100, m.avance) + '%"></i></div>' + (m.lograda ? "" : '<div class="hint" style="margin-top:3px">Faltan ' + money(m.falta) + '</div>') + '</div>';
+        return '<div class="goal"><div class="h"><b>' + esc(m.nombre) + '</b><span>' + (m.lograda ? "✔ lograda" : m.avance + "% de " + nf(m.objetivo)) + '</span></div><div class="bar g"><i ' + wi(Math.min(100, m.avance)) + '></i></div>' + (m.lograda ? "" : '<div class="hint" style="margin-top:3px">Faltan ' + money(m.falta) + '</div>') + '</div>';
       }).join("") + '</div>';
     }
     return h;
   }
   function hojaTarjeta() {
     abrirHoja('<div class="grab"></div><h3>Estado de cuenta nuevo</h3><p class="hint">Escribe lo que dice tu estado de cuenta. La fecha límite se calcula sola.</p>' +
-      '<div><label class="l">Pendiente del estado (S/)</label><input class="field" id="t-pend" inputmode="decimal" placeholder="Ej.: 150.11"></div>' +
-      '<div><label class="l">Deuda total hoy según tu app del banco (opcional)</label><input class="field" id="t-deuda" inputmode="decimal" placeholder="Solo si quieres re-sincronizar"></div>' +
+      '<div><label class="l">Pendiente del estado (S/)</label><input class="field" id="t-pend" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" autocomplete="off" placeholder="Ej.: 150.11"></div>' +
+      '<div><label class="l">Deuda total hoy según tu app del banco (opcional)</label><input class="field" id="t-deuda" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" autocomplete="off" placeholder="Solo si quieres re-sincronizar"></div>' +
       '<button class="btn" data-a="guardarTarjeta">Guardar</button><button class="btn sec2" data-a="cerrar">Cancelar</button>');
   }
   function guardarTarjeta() {
@@ -398,7 +433,7 @@
   }
   function hojaBanco() {
     abrirHoja('<div class="grab"></div><h3>Saldo real del banco</h3><p class="hint">Mira el saldo de tu cuenta de ahorros en la app del banco y escríbelo aquí. Si coincide con tu ahorro calculado, tus registros están completos.</p>' +
-      '<div><label class="l">Saldo (S/)</label><input class="field" id="b-saldo" inputmode="decimal" value="' + (S.estado && S.estado.banco !== null ? S.estado.banco : "") + '"></div>' +
+      '<div><label class="l">Saldo (S/)</label><input class="field" id="b-saldo" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" autocomplete="off" value="' + (S.estado && S.estado.banco !== null ? S.estado.banco : "") + '"></div>' +
       '<button class="btn" data-a="guardarBanco">Guardar</button><button class="btn sec2" data-a="cerrar">Cancelar</button>');
   }
 
@@ -414,7 +449,7 @@
   function sub(c) { return '<button class="back" data-a="ir" data-v="">‹ Volver</button>' + c; }
   function vistaFijos() {
     var D = S.FJ.data;
-    if (!D) return '<div class="empty"><span class="spin" style="border-color:#2A5DA8;border-right-color:transparent"></span></div>';
+    if (!D) return skel(3);
     var pend = D.fijos.filter(function (x) { return !x.pagado; }), h = "";
     h += '<div class="card"><div class="kv"><span>Pendientes este mes</span><b>' + D.pendientes + ' · ' + money(D.montoPendiente) + '</b></div></div>';
     if (pend.length) {
@@ -432,14 +467,14 @@
   }
   function vistaInformes() {
     var D = S.IN.data, h = '<div class="mes"><button data-a="mesI" data-v="-1">‹</button><b>' + mesNombre(S.IN.mes) + '</b><button data-a="mesI" data-v="1">›</button></div>';
-    if (!D) return h + '<div class="empty"><span class="spin" style="border-color:#2A5DA8;border-right-color:transparent"></span></div>';
+    if (!D) return h + skel(3);
     var dif = D.gastos - D.mesAnteriorGastos;
     h += '<div class="card"><div class="kv"><span>Ingresos</span><b>' + money(D.ingresos) + '</b></div><div class="kv"><span>Gastos</span><b>' + money(D.gastos) + '</b></div><div class="kv"><span>Vs. mes anterior</span><b style="color:' + (dif > 0 ? 'var(--bad)' : 'var(--ok)') + '">' + (dif > 0 ? "▲ " : "▼ ") + money(Math.abs(dif)) + '</b></div><div class="kv"><span>Promedio por día</span><b>' + money(D.promedioDiario) + '</b></div></div>';
     if (D.categorias.length) {
       var tot = D.categorias.reduce(function (s, c) { return s + c.monto; }, 0) || 1;
-      h += '<div class="sec"><span>En qué gastaste</span></div><div class="card">' + D.categorias.filter(function (c) { return c.monto > 0; }).map(function (c) {
+      h += donutCard(D) + '<div class="sec"><span>Detalle por categoría</span></div><div class="card">' + D.categorias.filter(function (c) { return c.monto > 0; }).map(function (c) {
         var p = Math.round(c.monto / tot * 100);
-        return '<div style="padding:6px 0"><div style="display:flex;justify-content:space-between;font-size:14px;gap:8px"><b style="font-weight:600">' + c.emoji + ' ' + esc(c.categoria) + '</b><span style="color:var(--mut);font-variant-numeric:tabular-nums">' + money(c.monto) + ' · ' + p + '%</span></div><div class="bar g"><i style="width:' + p + '%"></i></div>' +
+        return '<div style="padding:6px 0"><div style="display:flex;justify-content:space-between;font-size:14px;gap:8px"><b style="font-weight:600">' + c.emoji + ' ' + esc(c.categoria) + '</b><span style="color:var(--mut);font-variant-numeric:tabular-nums">' + money(c.monto) + ' · ' + p + '%</span></div><div class="bar g"><i ' + wi(p) + '></i></div>' +
           (c.mesAnterior > 0 ? '<div class="hint" style="margin-top:3px">Mes anterior: ' + money(c.mesAnterior) + '</div>' : "") + '</div>';
       }).join("") + '</div>';
     }
@@ -450,6 +485,24 @@
     if (D.top5.length) h += '<div class="sec"><span>Los 5 gastos más grandes</span></div><div class="card" style="padding:4px 15px">' + D.top5.map(function (x, i) { return '<div class="it"><span class="ico">' + (i + 1) + '</span><span class="t"><b>' + esc(x.lugar) + '</b><small>' + esc(x.categoria) + ' · ' + fechaCorta(x.fecha) + '</small></span><span class="m">' + money(x.monto) + '</span></div>'; }).join("") + '</div>';
     h += '<div class="sec"><span>Regla 50 / 30 / 20</span></div><div class="card"><div class="kv"><span>Necesidades (meta 50%)</span><b>' + D.necesidades + '%</b></div><div class="kv"><span>Gustos (meta 30%)</span><b>' + D.gustos + '%</b></div><div class="kv"><span>Ahorro (meta 20%)</span><b>' + D.ahorro + '%</b></div></div>';
     return h;
+  }
+  var PAL = ["#1F3FA8", "#3B82F6", "#8DB8FF", "#0E9F9A", "#F2A93B", "#E5484D", "#8B6CF0", "#64748B"];
+  function donutCard(D) {
+    var arr = D.categorias.filter(function (c) { return c.monto > 0; });
+    var tot = arr.reduce(function (s, c) { return s + c.monto; }, 0);
+    if (tot <= 0) return "";
+    var top = arr.slice(0, 7), resto = tot - top.reduce(function (s, c) { return s + c.monto; }, 0);
+    if (resto > 0.5) top.push({ categoria: "Otras", emoji: "•", monto: resto });
+    var C = 2 * Math.PI * 52, off = 0, segs = "", leg = "";
+    top.forEach(function (c, i) {
+      var len = c.monto / tot * C, col = PAL[i % PAL.length];
+      var da = Math.max(0, len - (top.length > 1 ? 2.5 : 0)).toFixed(2) + " " + C.toFixed(2);
+      segs += '<circle cx="70" cy="70" r="52" fill="none" stroke="' + col + '" stroke-width="16" transform="rotate(-90 70 70)" stroke-dashoffset="' + (-off).toFixed(2) + '" ' +
+        (S.anim ? 'style="stroke-dasharray:0 ' + C.toFixed(2) + '" data-da="' + da + '"' : 'stroke-dasharray="' + da + '"') + '/>';
+      off += len;
+      leg += '<div class="lg"><span class="dot" style="background:' + col + '"></span><span class="ln">' + c.emoji + ' ' + esc(c.categoria) + '</span><b>' + money(c.monto) + '</b><span class="pc">' + Math.round(c.monto / tot * 100) + '%</span></div>';
+    });
+    return '<div class="sec"><span>En qué gastaste</span></div><div class="card"><div class="dwrap"><svg viewBox="0 0 140 140" class="donut" role="img" aria-label="Gasto por categoría"><circle cx="70" cy="70" r="52" fill="none" stroke="var(--track)" stroke-width="16"/>' + segs + '</svg><div class="dc"><span>Gastos</span><b>' + money(tot) + '</b></div></div>' + leg + '</div>';
   }
   function vistaAjustes() {
     var E = S.estado, c = cola(), h = "";
@@ -509,10 +562,10 @@
     var url = $("#s-url").value.trim(), pin = $("#s-pin").value.trim();
     if (!/^https:\/\/script\.google\.com\/macros\/s\/[^\s]+\/exec$/.test(url)) { S.setupMsg = "El enlace debe empezar con https://script.google.com/macros/s/ y terminar en /exec"; render(); return; }
     if (!pin) { S.setupMsg = "Escribe tu PIN."; render(); return; }
-    var b = document.querySelector('[data-a="conectar"]'); b.disabled = true; b.innerHTML = '<span class="spin"></span> Conectando…';
+    var b = document.querySelector('[data-a="conectar"]'); b.disabled = true; b.innerHTML = '<span class="spin"></span> Conectando…'; ocupado("Conectando…");
     cfg = { url: url, pin: pin };
-    app("ping").then(function () { store("mg_cfg", cfg); S.setupMsg = ""; history.replaceState(null, "", location.pathname); cargarEstado(false); render(); })
-      .catch(function (e) { cfg = null; S.setupMsg = e.message && e.message.indexOf("Failed to fetch") < 0 ? e.message : "No se pudo conectar. Revisa el enlace y tu conexión."; render(); });
+    app("ping").then(function () { libre(); S.anim = true; store("mg_cfg", cfg); S.setupMsg = ""; history.replaceState(null, "", location.pathname); cargarEstado(false); render(); })
+      .catch(function (e) { libre(); cfg = null; S.setupMsg = e.message && e.message.indexOf("Failed to fetch") < 0 ? e.message : "No se pudo conectar. Revisa el enlace y tu conexión."; render(); });
   }
 
   /* ---------- hojas (diálogos) ---------- */
@@ -524,31 +577,32 @@
   function cargarEstado(silencioso) {
     if (!cfg) return;
     if (!silencioso && !S.estado) render();
-    app("estado").then(function (j) { S.estado = j; S.offline = false; store("mg_estado", j); if (S.tab !== "registrar" || !silencioso) render(); })
+    app("estado").then(function (j) { if (!S.estado) S.anim = true; S.estado = j; S.offline = false; store("mg_estado", j); if (S.tab !== "registrar" || !silencioso) render(); })
       .catch(function (e) { if (esRed(e)) { S.offline = true; if (S.tab === "inicio") render(); } else fail(e); });
   }
   function refrescarTodo() { S.G.data = null; cargarEstado(true); if (S.tab === "gastos") { render(); cargarGastos(); } }
-  function cargarFijos() { app("fijos").then(function (j) { S.FJ.data = j; S.FJ.sel = {}; if (S.sub === "fijos") render(); }).catch(fail); }
-  function cargarInformes() { S.IN.data = null; app("informes", { mes: S.IN.mes }).then(function (j) { S.IN.data = j; if (S.sub === "informes") render(); }).catch(fail); }
+  function cargarFijos() { app("fijos").then(function (j) { if (!S.FJ.data) S.anim = true; S.FJ.data = j; S.FJ.sel = {}; if (S.sub === "fijos") render(); }).catch(fail); }
+  function cargarInformes() { S.IN.data = null; app("informes", { mes: S.IN.mes }).then(function (j) { S.anim = true; S.IN.data = j; if (S.sub === "informes") render(); }).catch(fail); }
 
   /* ---------- acciones ---------- */
   var acciones = {
-    tab: function (v) { S.tab = v; S.sub = null; render(); if (v === "gastos" && !S.G.data) cargarGastos(); if (v === "gastos" || v === "tarjeta" || v === "inicio") cargarEstado(true); if (v === "registrar") { var l = $("#f-lugar"); if (l && S.F.modo === "gasto") pintarSugerencias(!S.F.lugar.trim()); } },
+    tab: function (v) { if (S.tab !== v || S.sub) S.anim = true; S.tab = v; S.sub = null; if (v === "gastos" && !S.G.data) S.G.animar = true; render(); if (v === "gastos" && !S.G.data) cargarGastos(); if (v === "gastos" || v === "tarjeta" || v === "inicio") cargarEstado(true); if (v === "registrar") { var l = $("#f-lugar"); if (l && S.F.modo === "gasto") pintarSugerencias(!S.F.lugar.trim()); var m0 = $("#f-monto"); if (m0) m0.focus(); } },
     refrescar: function () { toast("Actualizando…"); if (S.tab === "gastos") cargarGastos(); cargarEstado(true); },
     ir: function (v) {
+      S.anim = true;
       if (v === "fijos") { S.tab = "mas"; S.sub = "fijos"; render(); cargarFijos(); }
       else if (v === "informes") { S.tab = "mas"; S.sub = "informes"; render(); cargarInformes(); }
       else if (v === "presupuesto" || v === "ajustes") { S.tab = "mas"; S.sub = v; render(); if (v === "presupuesto") cargarEstado(true); }
       else { S.tab = "mas"; S.sub = null; render(); }
     },
-    modo: function (v) { S.F.modo = v; render(); },
+    modo: function (v) { S.F.modo = v; render(); var m1 = $("#f-monto"); if (m1) m1.focus(); },
     metodo: function (v) { S.F.metodo = v; render(); },
     desc: function (v) { S.F.desc = v; render(); },
     lugar: function (v) { S.F.lugar = v; var l = $("#f-lugar"); if (l) l.value = v; S.lugares = []; pintarSugerencias(false); sugerirCat(v); },
     elegirCat: function () { hojaCategorias(); },
     cat: function (v) { S.F.cat = v; S.F.catAuto = false; cerrarHoja(); var b = $("#f-cat"); if (b) b.innerHTML = catTxt() + '<em>Cambiar</em>'; },
     guardar: guardar,
-    mesG: function (v) { S.G.mes = mesMover(S.G.mes, +v); S.G.data = null; render(); cargarGastos(); },
+    mesG: function (v) { S.G.mes = mesMover(S.G.mes, +v); S.G.animar = true; S.G.data = null; render(); cargarGastos(); },
     metG: function (v) { S.G.metodo = v; S.G.data = null; render(); cargarGastos(); },
     catG: function () {
       var cats = (S.estado && S.estado.categoriasActivas) || [];
@@ -567,7 +621,7 @@
     guardarBanco: function () { app("saldo_banco", { saldo: $("#b-saldo").value.trim().replace(",", ".") }).then(function (j) { cerrarHoja(); toast(j.mensaje, "ok"); cargarEstado(true); }).catch(fail); },
     topeEditar: function (v) {
       var p = S.estado.presupuesto.filter(function (x) { return x.categoria === v; })[0];
-      abrirHoja('<div class="grab"></div><h3>' + p.emoji + ' ' + esc(v) + '</h3><p class="hint">Gastado este mes: ' + money(p.gastado) + '</p><div><label class="l">Tope mensual (S/)</label><input class="field" id="p-tope" inputmode="decimal" value="' + (p.tope && !p.referencia ? p.tope : "") + '" placeholder="Ej.: 300"></div><button class="btn" data-a="topeGuardar" data-v="' + esc(v) + '">Guardar tope</button><button class="btn sec2" data-a="topeQuitar" data-v="' + esc(v) + '">Quitar tope</button><button class="btn sec2" data-a="cerrar">Cancelar</button>');
+      abrirHoja('<div class="grab"></div><h3>' + p.emoji + ' ' + esc(v) + '</h3><p class="hint">Gastado este mes: ' + money(p.gastado) + '</p><div><label class="l">Tope mensual (S/)</label><input class="field" id="p-tope" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" autocomplete="off" value="' + (p.tope && !p.referencia ? p.tope : "") + '" placeholder="Ej.: 300"></div><button class="btn" data-a="topeGuardar" data-v="' + esc(v) + '">Guardar tope</button><button class="btn sec2" data-a="topeQuitar" data-v="' + esc(v) + '">Quitar tope</button><button class="btn sec2" data-a="cerrar">Cancelar</button>');
     },
     topeGuardar: function (v) { app("presupuesto_guardar", { categoria: v, tope: $("#p-tope").value.trim().replace(",", ".") }).then(function (j) { cerrarHoja(); toast(j.mensaje, "ok"); cargarEstado(true); }).catch(fail); },
     topeQuitar: function (v) { app("presupuesto_guardar", { categoria: v, tope: 0 }).then(function (j) { cerrarHoja(); toast(j.mensaje, "ok"); cargarEstado(true); }).catch(fail); },
@@ -625,6 +679,8 @@
     demo: function () { cfg = { demo: true }; store("mg_cfg", cfg); S.estado = null; S.tab = "inicio"; cargarEstado(false); render(); }
   };
   document.addEventListener("click", function (e) {
+    if (S.swiped && Date.now() - S.swiped < 400) { e.preventDefault(); return; }
+    if (e.target.closest(".swr .fg.open")) { cerrarSwipes(null); e.preventDefault(); return; }
     var el = e.target.closest("[data-a]"); if (!el) return;
     var a = acciones[el.getAttribute("data-a")]; if (a) { e.preventDefault(); a(el.getAttribute("data-v")); }
   });
@@ -634,6 +690,38 @@
     S.tq = setTimeout(function () { var pos = e.target.selectionStart; S.G.data = null; cargarGastos(); }, 350);
   });
   document.addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target.id === "s-pin") conectar(); });
+
+  /* ---------- deslizar una fila para editar o borrar ---------- */
+  var SWW = 148, SW = null;
+  function cerrarSwipes(salvo) {
+    Array.prototype.forEach.call(document.querySelectorAll(".swr .fg.open"), function (f) { if (f !== salvo) { f.classList.remove("open"); f.style.transform = ""; } });
+  }
+  document.addEventListener("touchstart", function (e) {
+    var fg = e.target.closest(".swr .fg");
+    if (!fg) { cerrarSwipes(null); return; }
+    cerrarSwipes(fg);
+    var t0 = e.touches[0]; SW = { fg: fg, x: t0.clientX, y: t0.clientY, base: fg.classList.contains("open") ? -SWW : 0, mode: null, v: 0 };
+  }, { passive: true });
+  document.addEventListener("touchmove", function (e) {
+    if (!SW) return;
+    var t0 = e.touches[0], dx = t0.clientX - SW.x, dy = t0.clientY - SW.y;
+    if (!SW.mode) {
+      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) { SW.mode = "h"; SW.fg.parentNode.classList.add("drag"); }
+      else if (Math.abs(dy) > 8) { SW = null; return; }
+      else return;
+    }
+    e.preventDefault();
+    SW.v = Math.max(-SWW - 24, Math.min(0, SW.base + dx)); SW.fg.style.transform = "translateX(" + SW.v + "px)";
+  }, { passive: false });
+  document.addEventListener("touchend", function () {
+    if (!SW) return;
+    if (SW.mode === "h") {
+      var abre = SW.v < -SWW / 2;
+      SW.fg.parentNode.classList.remove("drag"); SW.fg.classList.toggle("open", abre); SW.fg.style.transform = abre ? "translateX(-" + SWW + "px)" : "";
+      S.swiped = Date.now();
+    }
+    SW = null;
+  });
 
   /* ---------- arranque ---------- */
   if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) navigator.serviceWorker.register("sw.js").catch(function () {});
@@ -645,10 +733,15 @@
   });
   window.addEventListener("online", function () { enviarCola(false); cargarEstado(true); });
   if (cfg && !cfg.demo && PREF.lock) { S.locked = true; S.lockIn = ""; }
+  S.anim = true;
   render();
   if (cfg && !S.locked) { cargarEstado(true); enviarCola(false); }
+  (function () {
+    var s = $("#splash"); if (!s) return;
+    setTimeout(function () { s.classList.add("out"); setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s); }, 650); }, reducido() ? 250 : 1250);
+  })();
   if (/^#demo/.test(location.hash)) {
-    cfg = { demo: true }; S.locked = false;
+    cfg = { demo: true }; S.locked = false; S.anim = true;
     var mt = /tab=(\w+)/.exec(location.hash), ms = /sub=(\w+)/.exec(location.hash);
     if (mt) S.tab = mt[1]; if (ms) S.sub = ms[1];
     render(); cargarEstado(false);

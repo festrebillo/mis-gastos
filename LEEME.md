@@ -42,6 +42,13 @@ La app se actualiza sola al volver a abrirla con internet. Si cambias el script,
 - **Candado de la app:** código de 4 a 6 números, solo de este teléfono (se guarda su huella, no el código). Se pide al abrir y tras 0, 1 o 5 minutos fuera. «Olvidé mi código» cierra la sesión y pide de nuevo el enlace y el PIN del Excel.
 - **Modo oscuro:** Automático (sigue al iPhone), Claro u Oscuro, en Ajustes.
 
+## Novedades v1.2 (nueva apariencia y 3 funciones)
+- **Nuevo diseño** inspirado en una app de referencia: encabezado con degradado azul y textura de puntos, tarjetas más redondeadas, barra inferior flotante de cristal con indicador que se desliza, hojas que suben suavemente.
+- **Animaciones:** pantalla de inicio con el logo, tarjetas que entran escalonadas, barras y números que crecen al abrir, pantalla de carga con puntos que giran sobre fondo borroso, y una confirmación animada al guardar. Se reducen solas si el iPhone tiene activado «Reducir movimiento».
+- **Gráfico de dona** en Informes (gasto por categoría con leyenda).
+- **Deslizar un gasto** (o ingreso) a la izquierda: botones Editar y Borrar (Borrar siempre pide confirmación).
+- **Teclado numérico:** los campos de monto abren directo el teclado de números del iPhone; al abrir Registrar el cursor ya queda en el monto; solo acepta números y un punto o coma.
+
 ## Límites conocidos
 - Editar, borrar, pagar fijos y actualizar la tarjeta necesitan internet (solo registrar gasto/ingreso funciona sin conexión).
 - Las notificaciones push de iPhone solo existen para páginas agregadas a la pantalla de inicio y no están incluidas en esta versión.
