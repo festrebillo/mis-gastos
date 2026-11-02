@@ -49,6 +49,11 @@ La app se actualiza sola al volver a abrirla con internet. Si cambias el script,
 - **Deslizar un gasto** (o ingreso) a la izquierda: botones Editar y Borrar (Borrar siempre pide confirmación).
 - **Teclado numérico:** los campos de monto abren directo el teclado de números del iPhone; al abrir Registrar el cursor ya queda en el monto; solo acepta números y un punto o coma.
 
+## Novedades v1.3
+- **Registrar igual que el atajo:** Gasto → toca **Lugar** y elige de la lista (frecuentes, búsqueda y «Usar «…»» para un lugar nuevo) → se abre la lista de **categorías con la habitual primero (⭐)** → Pagado con → Detalle → Monto → Guardar. En **Ingreso** eliges Primera/Segunda Quincena o Ingreso Extra. La pestaña **Fijos** (dentro de Registrar) marca y paga los fijos pendientes.
+- **Nuevo ícono** («S/» sobre azul) y logo en la pantalla de inicio. Para ver el ícono nuevo hay que quitar la app de la pantalla de inicio y agregarla otra vez.
+- **Pantalla completa en iPhone:** colores sólidos en los bordes (hora/batería y barra inferior) y altura completa.
+
 ## Límites conocidos
 - Editar, borrar, pagar fijos y actualizar la tarjeta necesitan internet (solo registrar gasto/ingreso funciona sin conexión).
 - Las notificaciones push de iPhone solo existen para páginas agregadas a la pantalla de inicio y no están incluidas en esta versión.

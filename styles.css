@@ -21,12 +21,17 @@
 }
 ::placeholder{color:var(--mut);opacity:.8}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:linear-gradient(var(--hdr) 50%,var(--bg) 50%);overflow:hidden}
+html,body{height:100%;background-color:var(--bg);overflow:hidden}
+/* franjas sólidas en los bordes: el iPhone tiñe la hora/batería y la barra de abajo con estos colores */
+#cap{position:fixed;top:0;left:0;right:0;height:var(--sat);background:linear-gradient(90deg,#0A1A48,#0E2560);z-index:100;pointer-events:none}
+#capb{position:fixed;bottom:0;left:0;right:0;height:var(--sab);background:var(--bg);z-index:5;pointer-events:none}
+html[data-s=auth] #capb{background:#1F46B5}
 body{color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif;font-size:16px;overscroll-behavior:none;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none;transition:transform .15s var(--ease),opacity .15s}
 button:active{transform:scale(.97)}
 #app{position:fixed;top:0;bottom:0;left:0;right:0;display:flex;flex-direction:column;max-width:560px;margin:0 auto;background:var(--bg)}
+@supports (-webkit-touch-callout:none){#app{bottom:auto;height:100vh}}
 
 /* encabezado */
 .hdr{position:relative;flex:none;z-index:2;background:linear-gradient(155deg,#0A1A48 0%,#12307E 55%,#1F46B5 100%);color:#fff;padding:calc(var(--sat) + 14px) 20px 30px;border-radius:0 0 30px 30px;overflow:hidden;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;box-shadow:0 10px 28px rgba(0,0,0,.2)}
@@ -233,10 +238,15 @@ label.l{display:block;font-size:11.5px;color:var(--mut);letter-spacing:.4px;text
 #splash::before{content:"";position:absolute;width:340px;height:340px;border-radius:50%;background:radial-gradient(closest-side,rgba(125,162,255,.3),transparent);animation:breathe 2.4s ease-in-out infinite}
 @keyframes breathe{50%{transform:scale(1.15);opacity:.7}}
 #splash .lg2{position:relative;width:92px;height:92px;display:grid;place-items:center;animation:rise .8s var(--ease) both}
-#splash .lg2 svg{width:84px;height:84px;fill:none;stroke-linecap:round;stroke-linejoin:round}
-#splash .lg2 path,#splash .lg2 rect{stroke-dasharray:240;stroke-dashoffset:240;animation:draw2 1.1s .15s var(--ease) forwards}
+#splash .lg2 svg{width:110px;height:77px;fill:none;stroke-linecap:round;stroke-linejoin:round}
+#splash .lg2 path{stroke-dasharray:240;stroke-dashoffset:240;animation:draw2 1.1s .15s var(--ease) forwards}
 @keyframes draw2{to{stroke-dashoffset:0}}
 #splash h1{position:relative;color:#fff;font-size:32px;font-weight:700;letter-spacing:-.5px;animation:rise .8s .15s var(--ease) both}
 #splash h1 b{color:#A9C4FF}
 #splash p{position:relative;color:#B9C9EE;font-size:14px;animation:rise .8s .3s var(--ease) both}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* selector de lugar y categoría (como las listas del atajo) */
+.pick{display:flex;flex-direction:column;gap:2px;max-height:52vh;overflow-y:auto}
+.pick .it{padding:12px 4px}
+.pick .it .ok{color:var(--steel);font-weight:700}

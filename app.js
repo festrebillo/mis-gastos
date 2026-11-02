@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.2";
+  var VERSION = "1.3";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -128,9 +128,10 @@
   function render() {
     var el = $("#app");
     var ae = document.activeElement, aeId = ae && ae.id === "g-q" ? ae.id : null, aeSel = aeId ? ae.selectionStart : 0;
-    if (!cfg) { el.removeAttribute("data-skel"); el.innerHTML = vistaSetup(); return; }
-    if (S.locked) { cerrarHoja(); el.removeAttribute("data-skel"); el.innerHTML = vistaLock(); return; }
+    if (!cfg) { document.documentElement.setAttribute("data-s", "auth"); el.removeAttribute("data-skel"); el.innerHTML = vistaSetup(); return; }
+    if (S.locked) { document.documentElement.setAttribute("data-s", "auth"); cerrarHoja(); el.removeAttribute("data-skel"); el.innerHTML = vistaLock(); return; }
     if (el.getAttribute("data-skel") !== "1") { el.innerHTML = '<div class="hdr" id="hdr"></div><main id="main"></main>' + tabsHtml(); el.setAttribute("data-skel", "1"); S.vk = null; }
+    document.documentElement.setAttribute("data-s", "main");
     var h = "", m = "";
     var E = S.estado;
     if (S.tab === "inicio") { h = header(E ? E.mes + " " + E.anio : "Mis Gastos", "Hola, <b>" + esc(E ? E.nombre : "") + '</b>', accionesHdr()); m = vistaInicio(); }
@@ -200,11 +201,12 @@
   /* ---- Registrar ---- */
   function vistaRegistrar() {
     var F = S.F, E = S.estado, h = bannerCola();
-    h += '<div class="seg" role="tablist"><button class="' + (F.modo === "gasto" ? "on" : "") + '" data-a="modo" data-v="gasto">Gasto</button><button class="' + (F.modo === "ingreso" ? "on" : "") + '" data-a="modo" data-v="ingreso">Ingreso</button></div>';
+    h += '<div class="seg" role="tablist"><button class="' + (F.modo === "gasto" ? "on" : "") + '" data-a="modo" data-v="gasto">Gasto</button><button class="' + (F.modo === "ingreso" ? "on" : "") + '" data-a="modo" data-v="ingreso">Ingreso</button><button class="' + (F.modo === "fijos" ? "on" : "") + '" data-a="modo" data-v="fijos">Fijos</button></div>';
+    if (F.modo === "fijos") return h + vistaFijos();
     h += '<div class="amt"><span>S/</span><input id="f-monto" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" autocomplete="off" placeholder="0.00" value="' + esc(F.monto) + '" aria-label="Monto"></div>';
     if (F.modo === "gasto") {
-      h += '<div><label class="l" for="f-lugar">Lugar</label><input class="field" id="f-lugar" autocomplete="off" autocapitalize="words" placeholder="¿Dónde gastaste?" value="' + esc(F.lugar) + '"><div class="chips" id="f-sug"></div></div>';
-      h += '<div><label class="l">Categoría</label><button class="catline" id="f-cat" data-a="elegirCat" style="width:100%">' + catTxt() + '<em>' + (F.catAuto && F.cat ? "Sugerida · Cambiar" : "Cambiar") + '</em></button></div>';
+      h += '<div><label class="l">Lugar</label><button class="catline" data-a="elegirLugar"><span>' + (F.lugar ? "📍 " + esc(F.lugar) : '<span style="color:var(--mut)">Toca para elegir el lugar</span>') + '</span><em>' + (F.lugar ? "Cambiar" : "Elegir") + '</em></button></div>';
+      h += '<div><label class="l">Categoría</label><button class="catline" id="f-cat" data-a="elegirCat">' + catTxt() + '<em>' + (F.catAuto && F.cat ? "Sugerida · Cambiar" : "Cambiar") + '</em></button></div>';
       h += '<div><label class="l">Pagado con</label><div class="mset"><button class="' + (F.metodo === "Saldo Disponible" ? "on" : "") + '" data-a="metodo" data-v="Saldo Disponible">💵 Saldo Disponible</button><button class="' + (F.metodo === "Tarjeta de Crédito" ? "on" : "") + '" data-a="metodo" data-v="Tarjeta de Crédito">💳 Tarjeta</button></div></div>';
       h += '<div><label class="l" for="f-det">Detalle (opcional)</label><input class="field" id="f-det" autocomplete="off" placeholder="Almuerzo, regalo…" value="' + esc(F.detalle) + '"></div>';
     } else {
@@ -302,12 +304,33 @@
     })();
   }
   function hojaCategorias() {
-    var cats = (S.estado && S.estado.categoriasActivas) || [];
-    abrirHoja('<div class="grab"></div><h3>Categoría</h3><div class="stack">' + cats.map(function (c) {
-      return '<button class="it" data-a="cat" data-v="' + esc(c.nombre) + '"><span class="ico">' + c.emoji + '</span><span class="t"><b>' + esc(c.nombre) + '</b></span>' + (S.F.cat === c.nombre ? "✔" : "") + '</button>';
+    var cats = (S.estado && S.estado.categoriasActivas) || [], hab = S.F.habitual || "";
+    var orden = cats.slice().sort(function (x, y) { return (y.nombre === hab) - (x.nombre === hab); });
+    abrirHoja('<div class="grab"></div><h3>Categoría</h3>' + (hab ? '<p class="hint">⭐ = la habitual de este lugar</p>' : "") + '<div class="pick">' + orden.map(function (c) {
+      return '<button class="it" data-a="cat" data-v="' + esc(c.nombre) + '"><span class="ico">' + c.emoji + '</span><span class="t"><b>' + (c.nombre === hab ? "⭐ " : "") + esc(c.nombre) + '</b></span>' + (S.F.cat === c.nombre ? '<span class="ok">✔</span>' : "") + '</button>';
     }).join("") + '</div>');
   }
-
+  /* lista de lugares: frecuentes, búsqueda y «Usar …», igual que el atajo */
+  function hojaLugar() {
+    S.pick = { lista: (S.estado && S.estado.frecuentes) || [] };
+    abrirHoja('<div class="grab"></div><h3>¿Dónde fue?</h3><div class="search">' + I.search + '<input id="p-q" placeholder="Buscar o escribir otro lugar" autocomplete="off" autocapitalize="words"></div><div class="pick" id="p-list"></div>');
+    pintarLugares();
+    var q = $("#p-q");
+    q.addEventListener("input", function () {
+      clearTimeout(tl); var v = q.value.trim();
+      if (!v) { S.pick.lista = (S.estado && S.estado.frecuentes) || []; pintarLugares(); return; }
+      tl = setTimeout(function () {
+        call({ tipo: "lugares", q: v }).then(function (j) { S.pick.lista = (j.lugares || []).filter(function (x) { return !/^(✏️|🔍)/.test(x); }).slice(0, 10); pintarLugares(); }).catch(function () {});
+      }, 220);
+    });
+  }
+  function pintarLugares() {
+    var q = $("#p-q") ? $("#p-q").value.trim() : "", h = (S.pick && S.pick.lista || []).map(function (l) {
+      return '<button class="it" data-a="lugar" data-v="' + esc(l) + '"><span class="ico">📍</span><span class="t"><b>' + esc(l) + '</b></span>' + (S.F.lugar === l ? '<span class="ok">✔</span>' : "") + '</button>';
+    }).join("");
+    if (q) h += '<button class="it" data-a="lugar" data-v="' + esc(q) + '"><span class="ico">✏️</span><span class="t"><b>Usar «' + esc(q) + '»</b><small>Lugar nuevo: se recordará la próxima vez</small></span></button>';
+    var box = $("#p-list"); if (box) box.innerHTML = h || '<div class="empty">Escribe el nombre del lugar</div>';
+  }
   /* ---- Gastos ---- */
   function vistaGastos() {
     var G = S.G, h = bannerCola();
@@ -581,7 +604,7 @@
       .catch(function (e) { if (esRed(e)) { S.offline = true; if (S.tab === "inicio") render(); } else fail(e); });
   }
   function refrescarTodo() { S.G.data = null; cargarEstado(true); if (S.tab === "gastos") { render(); cargarGastos(); } }
-  function cargarFijos() { app("fijos").then(function (j) { if (!S.FJ.data) S.anim = true; S.FJ.data = j; S.FJ.sel = {}; if (S.sub === "fijos") render(); }).catch(fail); }
+  function cargarFijos() { app("fijos").then(function (j) { if (!S.FJ.data) S.anim = true; S.FJ.data = j; S.FJ.sel = {}; if (S.sub === "fijos" || (S.tab === "registrar" && S.F.modo === "fijos")) render(); }).catch(fail); }
   function cargarInformes() { S.IN.data = null; app("informes", { mes: S.IN.mes }).then(function (j) { S.anim = true; S.IN.data = j; if (S.sub === "informes") render(); }).catch(fail); }
 
   /* ---------- acciones ---------- */
@@ -595,12 +618,17 @@
       else if (v === "presupuesto" || v === "ajustes") { S.tab = "mas"; S.sub = v; render(); if (v === "presupuesto") cargarEstado(true); }
       else { S.tab = "mas"; S.sub = null; render(); }
     },
-    modo: function (v) { S.F.modo = v; render(); var m1 = $("#f-monto"); if (m1) m1.focus(); },
+    modo: function (v) { S.F.modo = v; render(); if (v === "fijos") cargarFijos(); else { var m1 = $("#f-monto"); if (m1) m1.focus(); } },
     metodo: function (v) { S.F.metodo = v; render(); },
     desc: function (v) { S.F.desc = v; render(); },
-    lugar: function (v) { S.F.lugar = v; var l = $("#f-lugar"); if (l) l.value = v; S.lugares = []; pintarSugerencias(false); sugerirCat(v); },
+    elegirLugar: function () { hojaLugar(); },
+    lugar: function (v) {
+      S.F.lugar = v; S.F.catAuto = true; S.F.habitual = ""; cerrarHoja();
+      call({ tipo: "sugerir", lugar: v }).then(function (j) { if (j && j.habitual) { S.F.habitual = j.habitual; S.F.cat = j.habitual; } })
+        .catch(function () {}).then(function () { render(); hojaCategorias(); });
+    },
     elegirCat: function () { hojaCategorias(); },
-    cat: function (v) { S.F.cat = v; S.F.catAuto = false; cerrarHoja(); var b = $("#f-cat"); if (b) b.innerHTML = catTxt() + '<em>Cambiar</em>'; },
+    cat: function (v) { S.F.catAuto = (v === S.F.habitual); S.F.cat = v; cerrarHoja(); render(); if (!S.F.monto) { var mm = $("#f-monto"); if (mm) mm.focus(); } },
     guardar: guardar,
     mesG: function (v) { S.G.mes = mesMover(S.G.mes, +v); S.G.animar = true; S.G.data = null; render(); cargarGastos(); },
     metG: function (v) { S.G.metodo = v; S.G.data = null; render(); cargarGastos(); },
