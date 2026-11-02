@@ -233,7 +233,7 @@ label.l{display:block;font-size:11.5px;color:var(--mut);letter-spacing:.4px;text
 .keys button:active{background:rgba(255,255,255,.28);transform:scale(.94)}
 .lk-forgot{color:#A9C4FF!important}
 /* pantalla de inicio */
-#splash{position:fixed;inset:0;z-index:90;background:linear-gradient(165deg,#081640 0%,#0F2A70 55%,#1A3D9C 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .5s,transform .5s var(--ease)}
+#splash{color:#fff;position:fixed;inset:0;z-index:90;background:linear-gradient(165deg,#081640 0%,#0F2A70 55%,#1A3D9C 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .5s,transform .5s var(--ease)}
 #splash.out{opacity:0;transform:scale(1.04);pointer-events:none}
 #splash::before{content:"";position:absolute;width:340px;height:340px;border-radius:50%;background:radial-gradient(closest-side,rgba(125,162,255,.3),transparent);animation:breathe 2.4s ease-in-out infinite}
 @keyframes breathe{50%{transform:scale(1.15);opacity:.7}}
