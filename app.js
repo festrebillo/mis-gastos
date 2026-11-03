@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.6.0";
+  var VERSION = "1.7.0";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -63,7 +63,7 @@
     F: nuevoForm(), G: { mes: mesClave(new Date()), q: "", cat: "", metodo: "", data: null, cargando: false },
     T: { cargando: false }, P: {}, FJ: { data: null, sel: {} }, IN: { mes: mesClave(new Date()), data: null }, lugares: []
   };
-  function nuevoForm() { return { modo: "gasto", monto: "", lugar: "", cat: "", catAuto: true, metodo: "Saldo Disponible", detalle: "", desc: "", guardando: false }; }
+  function nuevoForm() { return { modo: "gasto", monto: "", lugar: "", cat: "", catAuto: true, metodo: "Saldo Disponible", detalle: "", desc: "", foto: "", guardando: false }; }
 
   S.ver = { ahorro: false, deuda: false };
   S.ocultoTodo = PREF.ocultarAlAbrir === true;      // por defecto solo «Ahorro» y «Deuda» arrancan ocultos; lo demás se ve
@@ -144,7 +144,7 @@
     var el = $("#app");
     var ae = document.activeElement, aeId = ae && ae.id === "g-q" ? ae.id : null, aeSel = aeId ? ae.selectionStart : 0;
     if (!cfg) { document.documentElement.setAttribute("data-s", "auth"); el.removeAttribute("data-skel"); el.innerHTML = vistaSetup(); return; }
-    if (S.locked) { document.documentElement.setAttribute("data-s", "auth"); cerrarHoja(); el.removeAttribute("data-skel"); el.innerHTML = vistaLock(); return; }
+    if (S.locked) { document.documentElement.setAttribute("data-s", "auth"); cerrarHoja(); el.removeAttribute("data-skel"); el.innerHTML = vistaLock(); if (PREF.bio && !S.bioT) { S.bioT = true; setTimeout(bioEntrar, 450); } return; }
     if (el.getAttribute("data-skel") !== "1") { el.innerHTML = '<div class="hdr" id="hdr"></div><main id="main"></main>' + tabsHtml(); el.setAttribute("data-skel", "1"); S.vk = null; }
     document.documentElement.setAttribute("data-s", "main");
     var h = "", m = "";
@@ -210,7 +210,7 @@
     h += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="lbl">Gastado este mes</span><span class="hint">de ingresos ' + money(E.ingresos) + '</span></div>' +
       '<div class="med">' + money(E.gastos) + '</div><div class="bar' + (E.gastos > E.ingresos ? ' b' : '') + '"><i ' + wi(pc) + '></i></div>' +
       '<div class="hint" style="margin-top:6px">💵 Saldo ' + money(E.gastosSaldo) + ' · 💳 Tarjeta ' + money(E.gastosTarjeta) + '</div></div>';
-    h += metaCard(E);
+    h += metaCard(E) + ritmoCard() + retoCard();
     if (E.fijosPendientes > 0) h += '<button class="alert" data-a="ir" data-v="fijos"><span>⚠️</span><span style="flex:1;text-align:left">Fijos pendientes: <b>' + money(E.fijosPendientesMonto) + '</b> (' + E.fijosPendientes + ')</span><span class="chev">›</span></button>';
     var conTope = E.presupuesto.filter(function (p) { return p.tope && !p.referencia; }).sort(function (a, b) { return (b.pct || 0) - (a.pct || 0); }).slice(0, 4);
     if (conTope.length) {
@@ -236,12 +236,16 @@
     var F = S.F, E = S.estado, h = bannerCola();
     h += '<div class="seg" role="tablist"><button class="' + (F.modo === "gasto" ? "on" : "") + '" data-a="modo" data-v="gasto">Gasto</button><button class="' + (F.modo === "ingreso" ? "on" : "") + '" data-a="modo" data-v="ingreso">Ingreso</button><button class="' + (F.modo === "fijos" ? "on" : "") + '" data-a="modo" data-v="fijos">Fijos</button></div>';
     if (F.modo === "fijos") return h + vistaFijos();
+    if (F.modo === "gasto") h += '<div class="filt"><button class="chip" data-a="hojaVoz">🎤 Dictar</button>' + tplLista().map(function (x, i) { return '<button class="chip" data-a="tpl" data-v="' + i + '">⭐ ' + esc(x.n) + ' · S/ ' + x.monto + '</button>'; }).join("") + '</div>';
     h += '<div class="amt"><span>S/</span><input id="f-monto" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" autocomplete="off" placeholder="0.00" value="' + esc(F.monto) + '" aria-label="Monto"></div>';
     if (F.modo === "gasto") {
       h += '<div><label class="l">Lugar</label><button class="catline" data-a="elegirLugar"><span>' + (F.lugar ? "📍 " + esc(F.lugar) : '<span style="color:var(--mut)">Toca para elegir el lugar</span>') + '</span><em>' + (F.lugar ? "Cambiar" : "Elegir") + '</em></button></div>';
       h += '<div><label class="l">Categoría</label><button class="catline" id="f-cat" data-a="elegirCat">' + catTxt() + '<em>' + (F.catAuto && F.cat ? "Sugerida · Cambiar" : "Cambiar") + '</em></button></div>';
       h += '<div><label class="l">Pagado con</label><div class="mset"><button class="' + (F.metodo === "Saldo Disponible" ? "on" : "") + '" data-a="metodo" data-v="Saldo Disponible">💵 Saldo Disponible</button><button class="' + (F.metodo === "Tarjeta de Crédito" ? "on" : "") + '" data-a="metodo" data-v="Tarjeta de Crédito">💳 Tarjeta</button></div></div>';
       h += '<div><label class="l" for="f-det">Detalle (opcional)</label><input class="field" id="f-det" autocomplete="off" placeholder="Almuerzo, regalo…" value="' + esc(F.detalle) + '"></div>';
+      h += '<div id="puedo-w">' + puedoHtml() + '</div>';
+      h += '<div class="row2"><button class="btn sec2 mini2" data-a="foto">' + (F.foto ? "📷 Cambiar foto" : "📷 Comprobante") + '</button><button class="btn sec2 mini2" data-a="tplGuardar">⭐ Guardar plantilla</button></div>' +
+        (F.foto ? '<div class="fotow"><img src="' + F.foto + '" alt="Comprobante"><button class="linkbtn" data-a="fotoQuitar">Quitar foto</button></div>' : "") + '<input type="file" id="f-foto" accept="image/*" hidden>';
     } else {
       h += '<div><label class="l" for="f-desc">Descripción</label><input class="field" id="f-desc" autocomplete="off" placeholder="Ej.: Primera Quincena" value="' + esc(F.desc) + '"><div class="chips">' +
         ["Primera Quincena", "Segunda Quincena", "Ingreso Extra"].map(function (x) { return '<button class="chip' + (F.desc === x ? " sel" : "") + '" data-a="desc" data-v="' + x + '">' + x + '</button>'; }).join("") + '</div></div>';
@@ -263,7 +267,8 @@
   var tl;
   function enlazarRegistrar() {
     var m = $("#f-monto"), l = $("#f-lugar"), d = $("#f-det"), ds = $("#f-desc");
-    if (m) m.addEventListener("input", function () { var v = limpiarNum(m.value); if (v !== m.value) m.value = v; S.F.monto = v; });
+    if (m) m.addEventListener("input", function () { var v = limpiarNum(m.value); if (v !== m.value) m.value = v; S.F.monto = v; pintarPuedo(); });
+    var ff = $("#f-foto"); if (ff) ff.addEventListener("change", function () { procesarFoto(ff.files && ff.files[0]); });
     if (d) d.addEventListener("input", function () { S.F.detalle = d.value; });
     if (ds) ds.addEventListener("input", function () { S.F.desc = ds.value; });
     if (l) {
@@ -294,18 +299,23 @@
       if (!F.lugar.trim()) { toast("Escribe o elige el lugar", "err"); return; }
       body = { tipo: "gasto", tienda: F.lugar.trim(), categoria: F.cat, metodoPago: F.metodo, monto: monto, descripcion: F.detalle.trim() };
     } else body = { tipo: "ingreso", descripcion: F.desc.trim() || "Ingreso Extra", monto: monto };
+    if (F.modo === "gasto" && F.foto) body.foto = F.foto;
+    enviar(body, (F.modo === "gasto" ? body.tienda : body.descripcion) + " · " + money(body.monto), true);
+  }
+  function enviar(body, nota, desdeForm) {
     body.idr = nuevoId(); body.fecha = fechaLocal(new Date());     // id único (evita duplicados al reenviar) y hora real del registro
-    F.guardando = true; render();
-    call(body).then(function (j) {
+    if (desdeForm) { S.F.guardando = true; render(); }
+    return call(body).then(function (j) {
       if (j.status === "error") throw new Error(j.mensaje);
-      var modo = F.modo; S.F = nuevoForm(); S.F.modo = modo; S.G.data = null; S.T.cargado = false;
+      if (desdeForm) { var modo = S.F.modo; S.F = nuevoForm(); S.F.modo = modo; }
+      S.G.data = null; S.T.cargado = false; S.retoTs = 0;
       toast(j.mensaje || "✅ Guardado", "ok", 4800); celebrar(); cargarEstado(true); render(); enviarCola(false);
     }).catch(function (e) {
-      F.guardando = false;
+      if (desdeForm) S.F.guardando = false;
       if (esRed(e)) {
-        encolar(body, (F.modo === "gasto" ? body.tienda : body.descripcion) + " · " + money(body.monto));
-        var modo2 = F.modo; S.F = nuevoForm(); S.F.modo = modo2; render();
-        toast("📴 Sin conexión: guardado en el teléfono. Se enviará solo cuando vuelva internet.", "ok", 5600); return;
+        encolar(body, nota);
+        if (desdeForm) { var modo2 = S.F.modo; S.F = nuevoForm(); S.F.modo = modo2; }
+        render(); toast("📴 Sin conexión: guardado en el teléfono. Se enviará solo cuando vuelva internet.", "ok", 5600); return;
       }
       render(); fail(e);
     });
@@ -382,7 +392,7 @@
         var tot = D.gastos.filter(function (x) { return x.fecha.slice(0, 10) === k; }).reduce(function (s, x) { return s + x.monto; }, 0);
         h += '<div class="day"><span>' + etiquetaDia(k) + '</span><span>' + money(tot) + '</span></div><div class="card lista">'; abierto = true;
       }
-      h += swr('<button class="it" data-a="verGasto" data-v="' + g.fila + '"><span class="ico">' + g.emoji + '</span><span class="t"><b>' + esc(g.lugar) + '</b><small>' + esc(g.categoria) + (g.detalle && !g.fijo ? " · " + esc(g.detalle) : "") + '</small></span>' +
+      h += swr('<button class="it" data-a="verGasto" data-v="' + g.fila + '"><span class="ico">' + g.emoji + '</span><span class="t"><b>' + esc(g.lugar) + '</b><small>' + esc(g.categoria) + (detLimpio(g.detalle) && !g.fijo ? " · " + esc(detLimpio(g.detalle)) : "") + (detLink(g.detalle) ? " 📎" : "") + '</small></span>' +
         '<span class="m">' + money(g.monto) + '<small class="' + (g.metodo === "Tarjeta de Crédito" ? "tc" : "") + '">' + (g.metodo === "Tarjeta de Crédito" ? "💳 Tarjeta" : "Saldo") + '</small></span></button>', "editarGasto", g.fila, "gasto");
     });
     if (abierto) h += '</div>';
@@ -407,7 +417,7 @@
   }
   function hojaGasto(fila) {
     var g = S.G.data.gastos.filter(function (x) { return x.fila === fila; })[0]; if (!g) return;
-    abrirHoja('<div class="grab"></div><h3>' + g.emoji + ' ' + esc(g.lugar) + '</h3><div class="card"><div class="kv"><span>Monto</span><b>' + money(g.monto) + '</b></div><div class="kv"><span>Categoría</span><b>' + esc(g.categoria) + '</b></div><div class="kv"><span>Pagado con</span><b>' + (g.metodo === "Tarjeta de Crédito" ? "💳 Tarjeta de Crédito" : "💵 Saldo Disponible") + '</b></div><div class="kv"><span>Fecha</span><b>' + fechaCorta(g.fecha) + '</b></div>' + (g.detalle ? '<div class="kv"><span>Detalle</span><b>' + esc(g.detalle) + '</b></div>' : "") + '</div>' +
+    abrirHoja('<div class="grab"></div><h3>' + g.emoji + ' ' + esc(g.lugar) + '</h3><div class="card"><div class="kv"><span>Monto</span><b>' + money(g.monto) + '</b></div><div class="kv"><span>Categoría</span><b>' + esc(g.categoria) + '</b></div><div class="kv"><span>Pagado con</span><b>' + (g.metodo === "Tarjeta de Crédito" ? "💳 Tarjeta de Crédito" : "💵 Saldo Disponible") + '</b></div><div class="kv"><span>Fecha</span><b>' + fechaCorta(g.fecha) + '</b></div>' + (detLimpio(g.detalle) ? '<div class="kv"><span>Detalle</span><b>' + esc(detLimpio(g.detalle)) + '</b></div>' : "") + '</div>' + (detLink(g.detalle) ? '<a class="btn sec2" href="' + esc(detLink(g.detalle)) + '" target="_blank" rel="noopener">📎 Ver comprobante</a>' : "") +
       '<div class="row2"><button class="btn sec2" data-a="editarGasto" data-v="' + g.fila + '">Editar</button><button class="btn bad" data-a="borrarAsk" data-v="gasto:' + g.fila + '">Borrar</button></div><button class="btn sec2" data-a="cerrar">Cerrar</button>');
   }
   function hojaEditarGasto(fila) {
@@ -418,13 +428,13 @@
       '<div class="row2"><div><label class="l">Monto (S/)</label><input class="field" id="e-monto" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" autocomplete="off" value="' + g.monto + '"></div><div><label class="l">Fecha</label><input class="field" id="e-fecha" type="date" value="' + g.fecha.slice(0, 10) + '"></div></div>' +
       '<div><label class="l">Categoría</label><select class="field" id="e-cat">' + cats.map(function (c) { return '<option' + (c.nombre === g.categoria ? " selected" : "") + ' value="' + esc(c.nombre) + '">' + c.emoji + ' ' + esc(c.nombre) + '</option>'; }).join("") + '</select></div>' +
       '<div><label class="l">Pagado con</label><select class="field" id="e-met"><option value="Saldo Disponible"' + (g.metodo !== "Tarjeta de Crédito" ? " selected" : "") + '>💵 Saldo Disponible</option><option value="Tarjeta de Crédito"' + (g.metodo === "Tarjeta de Crédito" ? " selected" : "") + '>💳 Tarjeta de Crédito</option></select></div>' +
-      '<div><label class="l">Detalle</label><input class="field" id="e-det" value="' + esc(g.detalle) + '"></div>' +
+      '<div><label class="l">Detalle</label><input class="field" id="e-det" value="' + esc(detLimpio(g.detalle)) + '"></div>' +
       '<button class="btn" data-a="guardarGasto" data-v="' + g.fila + '">Guardar cambios</button><button class="btn sec2" data-a="cerrar">Cancelar</button>');
   }
   function guardarGasto(fila) {
     var g = S.G.data.gastos.filter(function (x) { return x.fila === fila; })[0];
     app("editar", { hoja: "gasto", fila: fila, firma: { monto: g.monto, texto: g.lugar },
-      nuevo: { lugar: $("#e-lugar").value, monto: $("#e-monto").value.replace(",", "."), fecha: $("#e-fecha").value, categoria: $("#e-cat").value, metodo: $("#e-met").value, detalle: $("#e-det").value } })
+      nuevo: { lugar: $("#e-lugar").value, monto: $("#e-monto").value.replace(",", "."), fecha: $("#e-fecha").value, categoria: $("#e-cat").value, metodo: $("#e-met").value, detalle: $("#e-det").value.trim() + (detLink(g.detalle) ? " 📎 " + detLink(g.detalle) : "") } })
       .then(function (j) { cerrarHoja(); toast(j.mensaje, "ok"); refrescarTodo(); }).catch(fail);
   }
   function hojaIngreso(fila) {
@@ -469,11 +479,7 @@
         return '<div><b>' + (x.neto >= 0 ? "+" : "−") + nf(Math.abs(Math.round(x.neto))) + '</b><i class="' + (x.neto < 0 ? "neg" : ult ? "cur" : "") + '" style="height:' + hh + 'px"></i>' + esc(x.mes) + (ult ? "*" : "") + '</div>';
       }).join("") + '</div><p class="hint" style="margin-top:6px">Lo que sumaste a tu ahorro (ingresos − gastos con Saldo Disponible). * mes en curso</p></div>';
     }
-    if (E.metas && E.metas.length) {
-      h += '<div class="sec"><span>Metas · con ' + money(E.ahorro) + ' disponibles</span></div><div class="card">' + E.metas.map(function (m) {
-        return '<div class="goal"><div class="h"><b>' + esc(m.nombre) + '</b><span>' + (m.lograda ? "✔ lograda" : m.avance + "% de " + nf(m.objetivo)) + '</span></div><div class="bar g"><i ' + wi(Math.min(100, m.avance)) + '></i></div>' + (m.lograda ? "" : '<div class="hint" style="margin-top:3px">Faltan ' + money(m.falta) + '</div>') + '</div>';
-      }).join("") + '</div>';
-    }
+    if (E.metas && E.metas.length) h += metasHtml(E);
     return h;
   }
   function hojaTarjeta() {
@@ -591,6 +597,7 @@
     h += '<div class="card"><div class="lbl">Apariencia</div><div class="seg" style="margin-top:8px">' +
       [["auto", "Automático"], ["claro", "Claro"], ["oscuro", "Oscuro"]].map(function (o) { return '<button class="' + (PREF.tema === o[0] ? "on" : "") + '" data-a="tema" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
       '</div><p class="hint" style="margin-top:6px">«Automático» sigue el modo claro u oscuro de tu iPhone.</p></div>';
+    h += '<div class="card"><div class="lbl">Inicio rápido</div><button class="cb' + (PREF.abrirRegistrar ? " on" : "") + '" data-a="abrirRegistrar" style="margin-top:4px"><span class="box">' + (PREF.abrirRegistrar ? "✓" : "") + '</span><span style="flex:1">Abrir la app directamente en «Registrar» con el teclado de números</span></button></div>';
     h += '<div class="card"><div class="lbl">Barra inferior</div><div class="seg" style="margin-top:8px">' +
       [[false, "Pegada abajo"], [true, "Flotante"]].map(function (o) { return '<button class="' + ((PREF.flotante === true) === o[0] ? "on" : "") + '" data-a="barra" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
       '</div><p class="hint" style="margin-top:6px">«Pegada abajo» es lo recomendado: no deja ninguna franja bajo la barra.</p></div>';
@@ -599,7 +606,7 @@
       (PREF.lock && !cfg.demo ?
         '<div class="kv"><span>🔒 Candado activado</span><b>' + PREF.lock.len + ' dígitos</b></div><label class="l" style="margin-top:8px">Pedir el código</label><div class="mset">' +
         [[0, "Siempre"], [1, "Tras 1 min"], [5, "Tras 5 min"]].map(function (o) { return '<button class="' + (PREF.lock.min === o[0] ? "on" : "") + '" data-a="lockMin" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
-        '</div><div class="row2" style="margin-top:10px"><button class="btn sec2" data-a="hojaLock">Cambiar código</button><button class="btn sec2" data-a="lockOff">Quitar candado</button></div>' :
+        '</div>' + (S.bioOk ? '<button class="cb' + (PREF.bio ? " on" : "") + '" data-a="bioToggle" style="margin-top:6px"><span class="box">' + (PREF.bio ? "✓" : "") + '</span><span style="flex:1">Entrar con Face ID / Touch ID (el código queda como respaldo)</span></button>' : "") + '<div class="row2" style="margin-top:10px"><button class="btn sec2" data-a="hojaLock">Cambiar código</button><button class="btn sec2" data-a="lockOff">Quitar candado</button></div>' :
         '<button class="btn sec2" style="margin-top:8px" data-a="hojaLock">🔒 Activar candado con código</button><p class="hint" style="margin-top:6px">Un código corto que se pide al abrir la app. Solo vale en este teléfono.</p>') + '</div>';
     if (c.length) {
       h += '<div class="sec"><span>Registros pendientes</span></div><div class="card" style="padding:4px 15px">' + c.map(function (x) {
@@ -631,7 +638,7 @@
     var keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "<"];
     return '<div class="lock"><div class="lk-top"><div class="lk-ic">' + I.lock + '</div><h1>Mis <b>Gastos</b></h1><p>' + esc(S.lockMsg || "Escribe tu código para entrar") + '</p><div class="dots' + (S.lockErr ? " err" : "") + '">' + dots + '</div></div>' +
       '<div class="keys">' + keys.map(function (k) { return k === "" ? '<span></span>' : '<button data-a="tecla" data-v="' + k + '" aria-label="' + (k === "<" ? "Borrar" : k) + '">' + (k === "<" ? "⌫" : k) + '</button>'; }).join("") + '</div>' +
-      '<button class="linkbtn lk-forgot" data-a="olvideLock">Olvidé mi código</button></div>';
+      (PREF.bio ? '<button class="linkbtn lk-forgot" data-a="bioEntrar">Usar Face ID</button>' : "") + '<button class="linkbtn lk-forgot" data-a="olvideLock">Olvidé mi código</button></div>';
   }
 
   /* ---- Acceso ---- */
@@ -663,12 +670,237 @@
   function cargarEstado(silencioso) {
     if (!cfg) return;
     if (!silencioso && !S.estado) render();
-    app("estado").then(function (j) { if (!S.estado) S.anim = true; S.estado = j; S.offline = false; store("mg_estado", j); if (S.tab !== "registrar" || !silencioso) render(); })
+    app("estado").then(function (j) { if (!S.estado) S.anim = true; S.estado = j; S.offline = false; store("mg_estado", j); if (S.tab !== "registrar" || !silencioso) render(); if (PREF.reto) cargarReto(); })
       .catch(function (e) { if (esRed(e)) { S.offline = true; if (S.tab === "inicio") render(); } else fail(e); });
   }
   function refrescarTodo() { S.G.data = null; cargarEstado(true); if (S.tab === "gastos") { render(); cargarGastos(); } }
   function cargarFijos() { app("fijos").then(function (j) { if (!S.FJ.data) S.anim = true; S.FJ.data = j; S.FJ.sel = {}; if (S.sub === "fijos" || (S.tab === "registrar" && S.F.modo === "fijos")) render(); }).catch(fail); }
   function cargarInformes() { S.IN.data = null; app("informes", { mes: S.IN.mes }).then(function (j) { S.anim = true; S.IN.data = j; if (S.sub === "informes") render(); }).catch(fail); }
+
+  /* ---------- ritmo del mes, ¿puedo gastarlo?, metas y retos ---------- */
+  function hoyE() { var E = S.estado, d = E && E.hoy ? parseF(E.hoy) : null; return d || new Date(); }
+  function ritmo() {
+    var E = S.estado; if (!E) return null;
+    var h = hoyE(), dm = new Date(h.getFullYear(), h.getMonth() + 1, 0).getDate(), dia = h.getDate(), rest = dm - dia + 1;
+    var cerrados = (E.ahorroMeses || []).slice(0, -1), ingEsp = E.ingresos;
+    if (cerrados.length) ingEsp = Math.max(E.ingresos, cerrados.reduce(function (s, x) { return s + x.ingresos; }, 0) / cerrados.length);
+    var m = E.metaAhorro, obj = m ? (m.tipo === "pct" ? m.valor / 100 * ingEsp : m.valor) : 0, fp = E.fijosPendientesMonto || 0;
+    var disp = ingEsp - obj - E.gastos - fp;
+    var proy = E.gastosSaldo + (E.gastosSaldo / dia) * (dm - dia) + fp;
+    return { ingEsp: ingEsp, obj: obj, hoyPuede: Math.max(0, disp / rest), sobra: disp, ritmoDia: E.gastos / dia, proyGastos: proy, proyNeto: ingEsp - proy };
+  }
+  function ritmoCard() {
+    var R = ritmo(); if (!R) return "";
+    var m = S.estado.metaAhorro, buena = m ? R.proyNeto >= R.obj : R.proyNeto >= 0;
+    return '<div class="card"><div class="lbl">Tu ritmo del mes</div>' +
+      '<div class="two2"><div><span class="hint">Puedes gastar hoy</span><div class="med">' + money(R.hoyPuede) + '</div></div><div><span class="hint">Llevas por día</span><div class="med">' + money(R.ritmoDia) + '</div></div></div>' +
+      '<div class="kv" style="margin-top:8px"><span>Si sigues así, gastarás con Saldo</span><b>' + money(R.proyGastos) + '</b></div>' +
+      '<div class="kv"><span>Ahorro estimado al cierre</span><b style="color:' + (buena ? "var(--ok)" : "var(--bad)") + '">' + money(R.proyNeto) + '</b></div>' +
+      '<div class="hint" style="margin-top:6px">' + (m ? (buena ? "🎯 Cumplirías tu meta de " + money(R.obj) + ". " : "⚠️ Quedarías " + money(R.obj - R.proyNeto) + " por debajo de tu meta de " + money(R.obj) + ". ") : "") +
+      'Es una estimación con tus ingresos habituales (' + money(R.ingEsp) + '), tus fijos pendientes y lo gastado hasta hoy.</div></div>';
+  }
+  function puedoHtml() {
+    var F = S.F, E = S.estado, monto = parseFloat(String(F.monto).replace(",", "."));
+    if (!E || F.modo !== "gasto" || !(monto > 0)) return "";
+    var lines = [], nivel = 0, tarj = F.metodo === "Tarjeta de Crédito", R = ritmo();
+    var p = F.cat ? E.presupuesto.filter(function (c) { return c.categoria === F.cat; })[0] : null;
+    if (p && p.tope && !p.referencia) {
+      var rest = p.tope - p.gastado - monto;
+      if (rest < 0) { lines.push("Te pasarías del tope de " + esc(p.categoria) + " por " + money(-rest)); nivel = 2; }
+      else { lines.push("En " + esc(p.categoria) + " te quedarían " + money(rest) + " de " + money(p.tope)); if (rest < p.tope * 0.2) nivel = Math.max(nivel, 1); }
+    }
+    if (tarj) { if (E.tarjeta) lines.push("Tu deuda de la tarjeta subiría a " + mk(E.tarjeta.deuda + monto, "deuda")); }
+    else {
+      lines.push("Tu ahorro quedaría en " + mk(E.ahorro - monto, "ahorro"));
+      if (E.ahorro - monto < (E.reserva || 0)) { lines.push("⚠️ Usarías dinero reservado para tus fijos"); nivel = 2; }
+    }
+    var m = E.metaAhorro;
+    if (m && !tarj) {
+      var lg = m.logrado - monto;
+      if (m.logrado >= m.objetivo && lg < m.objetivo) { lines.push("Te sacaría de tu meta de ahorro del mes"); nivel = Math.max(nivel, 1); }
+      else if (lg < m.objetivo) lines.push("Te faltarían " + money(m.objetivo - lg) + " para tu meta del mes");
+    }
+    if (R && R.sobra < 0) { lines.push("Este mes ya vas por encima de lo previsto"); nivel = Math.max(nivel, 1); }
+    else if (R && monto > R.hoyPuede) { lines.push("Pasa de los " + money(R.hoyPuede) + " sugeridos para hoy"); nivel = Math.max(nivel, 1); }
+    return '<div class="puedo n' + nivel + '"><b>' + ["✅ Puedes gastarlo", "🟠 Hazlo con cuidado", "🔴 Mejor no"][nivel] + '</b>' + lines.map(function (x) { return '<div>· ' + x + '</div>'; }).join("") + '</div>';
+  }
+  function pintarPuedo() { var b = $("#puedo-w"); if (b) b.innerHTML = puedoHtml(); }
+
+  /* ---- dictado: «30 soles en Adobada, almuerzo» -> monto, lugar, detalle ---- */
+  var NUMP = { cero: 0, un: 1, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, once: 11, doce: 12, trece: 13, catorce: 14, quince: 15, dieciseis: 16, diecisiete: 17, dieciocho: 18, diecinueve: 19,
+    veinte: 20, veintiun: 21, veintiuno: 21, veintidos: 22, veintitres: 23, veinticuatro: 24, veinticinco: 25, veintiseis: 26, veintisiete: 27, veintiocho: 28, veintinueve: 29, treinta: 30, cuarenta: 40, cincuenta: 50, sesenta: 60, setenta: 70, ochenta: 80, noventa: 90,
+    cien: 100, ciento: 100, doscientos: 200, trescientos: 300, cuatrocientos: 400, quinientos: 500, seiscientos: 600, setecientos: 700, ochocientos: 800, novecientos: 900, mil: 1000 };
+  function sinTilde(s) { return s.normalize ? s.normalize("NFD").replace(/[̀-ͯ]/g, "") : s; }
+  function numP(w) { var k = sinTilde(String(w || "").toLowerCase()); return Object.prototype.hasOwnProperty.call(NUMP, k) ? NUMP[k] : undefined; }
+  function palabrasADigitos(txt) {
+    var w = txt.split(/\s+/).filter(Boolean), out = [], i = 0;
+    while (i < w.length) {
+      var v = numP(w[i]), k = sinTilde(w[i].toLowerCase());
+      if (v === undefined || ((k === "un" || k === "una" || k === "uno") && !(i + 1 < w.length && (/^sol/i.test(w[i + 1]) || numP(w[i + 1]) === 1000)))) { out.push(w[i]); i++; continue; }
+      var tot = 0, cur = 0, j = i, usado = false;
+      while (j < w.length) {
+        var n = numP(w[j]);
+        if (n !== undefined) { if (n === 1000) { tot += (cur || 1) * 1000; cur = 0; } else cur += n; usado = true; j++; }
+        else if (usado && sinTilde(w[j].toLowerCase()) === "y" && j + 1 < w.length && numP(w[j + 1]) !== undefined) j++;
+        else break;
+      }
+      out.push(String(tot + cur)); i = j;
+    }
+    return out.join(" ");
+  }
+  function cap(s) { s = String(s || "").trim(); return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
+  function titulo(s) { return String(s || "").trim().split(/\s+/).map(function (x) { return x ? x.charAt(0).toUpperCase() + x.slice(1).toLowerCase() : ""; }).join(" "); }
+  function quitarPal(s, lista) { return s.replace(new RegExp("(^|\\s)(?:" + lista + ")(?=\\s|$)", "ig"), " ").replace(/\s+/g, " ").trim(); }
+  function parseVoz(txt) {
+    var r = { monto: "", lugar: "", detalle: "", metodo: "" };
+    var t = palabrasADigitos(String(txt || "").replace(/[\n,;]+/g, " , ").replace(/\s+/g, " ").trim());
+    if (!t) return r;
+    var re = /(s\/\.?\s*)?(\d+(?:[.,]\d{1,2})?)(\s*(?:soles?|sol|s\/))?(?:\s+con\s+(\d{2})(?=\s|$)|\s+con\s+(\d{1,2})\s*c[eé]ntimos?)?/gi, best = null, x;
+    while ((x = re.exec(t))) { var marc = !!(x[1] || x[3]); if (!best || (marc && !best.marc)) best = { x: x, marc: marc }; }
+    var resto = t;
+    if (best) {
+      var x0 = best.x, ent = x0[2].replace(",", "."), cen = x0[4] || x0[5];
+      r.monto = cen && ent.indexOf(".") < 0 ? ent + "." + (cen.length < 2 ? "0" + cen : cen) : ent;
+      resto = (t.slice(0, x0.index) + " " + t.slice(x0.index + x0[0].length)).replace(/\s+/g, " ").trim();
+    }
+    if (/(^|\s)(tarjeta|cr[eé]dito|visa)(?=\s|$)/i.test(resto)) { r.metodo = "Tarjeta de Crédito"; resto = quitarPal(resto, "(?:con|en|pagu[eé] con|pagado con)\\s+(?:la\\s+|mi\\s+)?tarjeta(?:\\s+de\\s+cr[eé]dito)?|(?:con\\s+)?(?:la\\s+|mi\\s+)?tarjeta|cr[eé]dito|visa"); }
+    else if (/(^|\s)(efectivo|yape|plin|saldo|d[eé]bito)(?=\s|$)/i.test(resto)) { r.metodo = "Saldo Disponible"; resto = quitarPal(resto, "(?:con|en|pagu[eé] con)\\s+(?:el\\s+|mi\\s+)?(?:efectivo|yape|plin|saldo|d[eé]bito)|efectivo|yape|plin|saldo|d[eé]bito"); }
+    resto = quitarPal(resto, "gast[eé]|pagu[eé]|compr[eé]|fueron|fue|registra|registrar|anota|anotar|soles|sol|,");
+    var fr = (S.estado && S.estado.frecuentes) || [], lugar = "", i;
+    var em = /(?:^|\s)en\s+(.+?)(?=\s+(?:por|para|de|con|y|que)\s|$)/i.exec(resto);
+    if (em) { lugar = em[1]; resto = (resto.slice(0, em.index) + " " + resto.slice(em.index + em[0].length)).replace(/\s+/g, " ").trim(); }
+    else for (i = 0; i < fr.length; i++) { var p0 = resto.toLowerCase().indexOf(fr[i].toLowerCase()); if (p0 >= 0) { lugar = fr[i]; resto = (resto.slice(0, p0) + " " + resto.slice(p0 + fr[i].length)).replace(/\s+/g, " ").trim(); break; } }
+    for (i = 0; i < fr.length; i++) if (lugar && lugar.length > fr[i].length && lugar.toLowerCase().indexOf(fr[i].toLowerCase()) === 0 && /\s/.test(lugar.charAt(fr[i].length))) { resto = (lugar.slice(fr[i].length) + " " + resto).trim(); lugar = fr[i]; break; }
+    for (i = 0; i < fr.length; i++) if (lugar && fr[i].toLowerCase() === lugar.toLowerCase()) { lugar = fr[i]; break; }
+    if (lugar && i === fr.length) lugar = titulo(lugar);
+    resto = resto.replace(/^(?:(?:por|para|de|del|el|la|los|las|un|una|y|en|a|al)\s+)+/i, "").replace(/(?:\s+(?:por|para|de|del|el|la|y|en|a|al))+$/i, "").trim();
+    r.lugar = lugar; r.detalle = cap(resto);
+    return r;
+  }
+  function pintarVoz() {
+    var p = parseVoz($("#v-txt").value), b = $("#v-prev"); if (!b) return;
+    b.innerHTML = (p.monto || p.lugar || p.detalle) ? 'Entendí: <b>' + (p.monto ? "S/ " + esc(p.monto) : "(sin monto)") + '</b> · ' + (p.lugar ? "📍 " + esc(p.lugar) : "(sin lugar)") + (p.detalle ? " · " + esc(p.detalle) : "") + (p.metodo ? " · " + (p.metodo === "Tarjeta de Crédito" ? "💳 Tarjeta" : "💵 Saldo") : "") : "Aquí verás cómo lo entendí.";
+  }
+  function hojaVoz() {
+    var rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    abrirHoja('<div class="grab"></div><h3>🎤 Dictar gasto</h3><p class="hint">Di o escribe algo como «30 soles de almuerzo en Adobada» o «46 con cincuenta en Uber con tarjeta». ' + (rec ? "" : "Para dictar, toca el micrófono 🎤 del teclado del iPhone.") + '</p>' +
+      '<textarea class="field" id="v-txt" rows="3" placeholder="Ej.: 30 soles de almuerzo en Adobada" autocapitalize="sentences"></textarea>' + (rec ? '<button class="btn sec2" data-a="vozMic" id="v-mic">🎤 Hablar</button>' : "") +
+      '<div id="v-prev" class="card hint">Aquí verás cómo lo entendí.</div><button class="btn" data-a="vozUsar">Usar en el formulario</button><button class="btn sec2" data-a="cerrar">Cancelar</button>');
+    var t = $("#v-txt"); t.addEventListener("input", pintarVoz); t.focus();
+  }
+  function vozMic() {
+    var Rec = window.SpeechRecognition || window.webkitSpeechRecognition; if (!Rec) return;
+    var rc = new Rec(), b = $("#v-mic"); rc.lang = "es-PE"; rc.interimResults = true; rc.continuous = false;
+    rc.onresult = function (ev) { var s = ""; for (var i = 0; i < ev.results.length; i++) s += ev.results[i][0].transcript; var t = $("#v-txt"); if (t) { t.value = s; pintarVoz(); } };
+    rc.onerror = function () { if (b) b.textContent = "🎤 Hablar"; toast("El dictado no está disponible aquí. Usa el micrófono del teclado.", "err", 4500); };
+    rc.onend = function () { if (b) b.textContent = "🎤 Hablar"; };
+    try { rc.start(); if (b) b.textContent = "🎙️ Escuchando…"; } catch (e) { toast("No se pudo iniciar el micrófono", "err"); }
+  }
+
+  /* ---- comprobante (foto): se reduce antes de enviar ---- */
+  function procesarFoto(file) {
+    if (!file) return;
+    var fr = new FileReader();
+    fr.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var k = Math.min(1, 1280 / Math.max(img.width, img.height)), c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        S.F.foto = c.toDataURL("image/jpeg", 0.72); render();
+      };
+      img.onerror = function () { toast("No se pudo leer la foto", "err"); };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  }
+  var RE_ADJ = /\s*📎\s*(https:\/\/\S+)\s*$/;
+  function detLimpio(d) { return String(d || "").replace(RE_ADJ, "").trim(); }
+  function detLink(d) { var m = RE_ADJ.exec(String(d || "")); return m ? m[1] : ""; }
+
+  /* ---- plantillas de gasto (se guardan en este teléfono) ---- */
+  function tplLista() { return PREF.plantillas || []; }
+  function hojaTpl(i) {
+    var t = tplLista()[i]; if (!t) return;
+    abrirHoja('<div class="grab"></div><h3>⭐ ' + esc(t.n) + '</h3><div class="card"><div class="kv"><span>Monto</span><b>' + money(t.monto) + '</b></div><div class="kv"><span>Lugar</span><b>' + esc(t.lugar) + '</b></div><div class="kv"><span>Categoría</span><b>' + esc(t.cat || "Automática") + '</b></div><div class="kv"><span>Pagado con</span><b>' + (t.metodo === "Tarjeta de Crédito" ? "💳 Tarjeta" : "💵 Saldo") + '</b></div></div>' +
+      '<button class="btn" data-a="tplYa" data-v="' + i + '">Registrar ahora</button><button class="btn sec2" data-a="tplUsar" data-v="' + i + '">Llenar el formulario</button><button class="btn sec2" data-a="tplBorrar" data-v="' + i + '">Borrar plantilla</button><button class="btn sec2" data-a="cerrar">Cerrar</button>');
+  }
+  function cuerpoTpl(t) { return { tipo: "gasto", tienda: t.lugar, categoria: t.cat, metodoPago: t.metodo, monto: t.monto, descripcion: t.detalle || "" }; }
+
+  /* ---- metas: avance, y fecha estimada con tu ritmo de ahorro ---- */
+  function durMeses(n) { if (n < 12) return n + (n === 1 ? " mes" : " meses"); var a = Math.floor(n / 12), r = n % 12; return a + (a === 1 ? " año" : " años") + (r ? " " + r + (r === 1 ? " mes" : " m.") : ""); }
+  function metasHtml(E) {
+    var cer = (E.ahorroMeses || []).slice(0, -1).filter(function (x) { return x.neto > 0; }).slice(-3);
+    var avg = cer.length ? cer.reduce(function (s, x) { return s + x.neto; }, 0) / cer.length : 0, hoy = hoyE(), C = 2 * Math.PI * 20;
+    return '<div class="sec"><span>Metas · con ' + money(E.ahorro) + ' disponibles</span></div><div class="card">' + E.metas.map(function (m) {
+      var pct = Math.max(0, Math.min(100, m.avance)), da = (pct / 100 * C).toFixed(2) + " " + C.toFixed(2), est;
+      if (m.lograda) est = "✔ Lograda";
+      else if (avg > 0) {
+        var meses = Math.ceil(m.falta / avg), f = new Date(hoy.getFullYear(), hoy.getMonth() + meses, 1), lim = m.limite ? parseF(m.limite) : null;
+        est = "A tu ritmo (" + money(avg) + " al mes) llegas ~ " + MESES[f.getMonth()] + " " + f.getFullYear() + " · " + durMeses(meses);
+        if (lim) { var ml = (lim.getFullYear() - hoy.getFullYear()) * 12 + lim.getMonth() - hoy.getMonth(); est += ml >= meses ? " · ✔ a tiempo" : " · ⚠ " + (meses - ml) + " m. tarde"; }
+      } else est = "Aún no hay ahorro mensual positivo para estimar la fecha";
+      return '<div class="goal2"><svg class="rg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke="var(--track)" stroke-width="6"/><circle cx="24" cy="24" r="20" fill="none" stroke="var(--navy)" stroke-width="6" stroke-linecap="round" transform="rotate(-90 24 24)" ' +
+        (S.anim ? 'style="stroke-dasharray:0 ' + C.toFixed(2) + '" data-da="' + da + '"' : 'stroke-dasharray="' + da + '"') + '/><text x="24" y="28" text-anchor="middle" font-size="11" font-weight="700" fill="var(--navy)">' + Math.round(pct) + '%</text></svg>' +
+        '<div class="gt"><div class="h"><b>' + esc(m.nombre) + '</b><span>' + (m.lograda ? "" : "de " + nf(m.objetivo)) + '</span></div>' + (m.lograda ? "" : '<div class="hint">Faltan ' + money(m.falta) + '</div>') + '<div class="hint est">' + est + '</div></div></div>';
+    }).join("") + '</div>';
+  }
+
+  /* ---- reto de ahorro (se guarda en este teléfono) ---- */
+  function diasReto(r) { var h = hoyE(), a = parseF(r.ini), t0 = new Date(h.getFullYear(), h.getMonth(), h.getDate()); return Math.round((t0 - a) / 864e5) + 1; }
+  function finReto(r) { var a = parseF(r.ini); return ymd(new Date(a.getFullYear(), a.getMonth(), a.getDate() + r.dias - 1)); }
+  function cargarReto(forzar) {
+    var r = PREF.reto; if (!r || !cfg) return;
+    if (!forzar && S.retoTs && Date.now() - S.retoTs < 20000) return;
+    S.retoTs = Date.now();
+    var ini = parseF(r.ini), fin = parseF(finReto(r)), ms = [mesClave(ini)]; if (mesClave(fin) !== ms[0]) ms.push(mesClave(fin));
+    Promise.all(ms.map(function (mes) { return app("gastos", { mes: mes, categoria: r.cat }); })).then(function (rs) {
+      var tot = 0, f2 = finReto(r); rs.forEach(function (j) { (j.gastos || []).forEach(function (g) { var d = g.fecha.slice(0, 10); if (d >= r.ini && d <= f2 && g.categoria === r.cat) tot += g.monto; }); });
+      S.reto = { tot: tot, key: r.ini + r.cat };
+      if (diasReto(r) > r.dias && !r.contado && (r.tope > 0 ? tot <= r.tope : tot === 0)) { r.contado = true; PREF.retosOk = (PREF.retosOk || 0) + 1; guardarPref(); }
+      if (S.tab === "inicio") render();
+    }).catch(function () {});
+  }
+  function retoCard() {
+    var r = PREF.reto;
+    if (!r) return '<button class="card" data-a="hojaReto"><div class="rowh"><span class="lbl">🎯 Reto de ahorro</span><span class="linkbtn">Crear</span></div><p class="hint" style="margin-top:4px">Por ejemplo: una semana sin antojos. Te muestro cómo vas.' + (PREF.retosOk ? " 🏅 Cumplidos: " + PREF.retosOk : "") + '</p></button>';
+    var n = diasReto(r), fin = n > r.dias, dia = Math.max(1, Math.min(n, r.dias)), R = S.reto, tot = R && R.key === r.ini + r.cat ? R.tot : null;
+    var roto = tot !== null && (r.tope > 0 ? tot > r.tope : tot > 0);
+    var est = tot === null ? "Calculando…" : roto ? "❌ " + (r.tope > 0 ? "Pasaste el límite: gastaste " : "Se rompió: gastaste ") + money(tot) : fin ? "🎉 ¡Reto cumplido! Gastaste " + money(tot) : "✅ Vas bien · gastado " + money(tot) + (r.tope > 0 ? " de " + money(r.tope) : "");
+    return '<button class="card" data-a="hojaRetoDet"><div class="rowh"><span class="lbl">🎯 ' + esc(r.nombre) + '</span><span class="hint">' + (fin ? "terminó" : "día " + dia + " de " + r.dias) + '</span></div>' +
+      '<div class="bar' + (roto ? " b" : fin ? " ok" : "") + '"><i ' + wi(dia / r.dias * 100) + '></i></div><div class="hint" style="margin-top:6px">' + est + '</div>' +
+      (PREF.retosOk ? '<div class="hint" style="margin-top:2px">🏅 Retos cumplidos: ' + PREF.retosOk + '</div>' : "") + '</button>';
+  }
+  function hojaReto() {
+    var cats = (S.estado && S.estado.categoriasActivas) || [], RT = S.RT = S.RT || {};
+    if (!RT.cat) { var a = cats.filter(function (c) { return /antojo/i.test(c.nombre); })[0] || cats[0]; RT.cat = a ? a.nombre : ""; RT.dias = 7; RT.modo = "cero"; RT.tope = ""; }
+    abrirHoja('<div class="grab"></div><h3>🎯 Nuevo reto</h3><p class="hint">Elige en qué categoría quieres gastar menos y por cuántos días. Empieza hoy.</p>' +
+      '<div><label class="l">Categoría</label><select class="field" id="rt-cat">' + cats.map(function (c) { return '<option value="' + esc(c.nombre) + '"' + (c.nombre === RT.cat ? " selected" : "") + '>' + c.emoji + ' ' + esc(c.nombre) + '</option>'; }).join("") + '</select></div>' +
+      '<div><label class="l">Duración</label><div class="mset">' + [7, 14, 30].map(function (d) { return '<button class="' + (RT.dias === d ? "on" : "") + '" data-a="rtDias" data-v="' + d + '">' + d + ' días</button>'; }).join("") + '</div></div>' +
+      '<div><label class="l">Meta del reto</label><div class="mset"><button class="' + (RT.modo === "cero" ? "on" : "") + '" data-a="rtModo" data-v="cero">Sin gastar nada</button><button class="' + (RT.modo === "max" ? "on" : "") + '" data-a="rtModo" data-v="max">Gastar menos de…</button></div></div>' +
+      (RT.modo === "max" ? '<div><label class="l">Máximo en todo el reto (S/)</label><input class="field" id="rt-tope" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" autocomplete="off" value="' + esc(RT.tope) + '" placeholder="Ej.: 50"></div>' : "") +
+      '<button class="btn" data-a="rtCrear">Empezar reto</button><button class="btn sec2" data-a="cerrar">Cancelar</button>');
+  }
+
+  /* ---- Face ID / Touch ID (verificación del propio teléfono; el código sigue como respaldo) ---- */
+  function b64u(buf) { var s = ""; new Uint8Array(buf).forEach(function (x) { s += String.fromCharCode(x); }); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  function ub64(s) { s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u.buffer; }
+  function bioDetectar() {
+    try { if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(function (ok) { S.bioOk = !!ok; if (S.sub === "ajustes") render(); }).catch(function () {}); } catch (e) {}
+  }
+  function bioActivar() {
+    var ch = crypto.getRandomValues(new Uint8Array(32)), uid = crypto.getRandomValues(new Uint8Array(16));
+    return navigator.credentials.create({ publicKey: { challenge: ch, rp: { name: "Mis Gastos" }, user: { id: uid, name: "mis-gastos", displayName: "Mis Gastos" },
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }], authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60000, attestation: "none" } })
+      .then(function (c) { PREF.bio = b64u(c.rawId); guardarPref(); });
+  }
+  function bioEntrar() {
+    if (!PREF.bio || !S.locked || !navigator.credentials) return;
+    var ch = crypto.getRandomValues(new Uint8Array(32));
+    navigator.credentials.get({ publicKey: { challenge: ch, allowCredentials: [{ type: "public-key", id: ub64(PREF.bio) }], userVerification: "required", timeout: 60000 } })
+      .then(function () { desbloquear(); }).catch(function () {});
+  }
+  function desbloquear() { S.locked = false; S.lockIn = ""; S.lockFallos = 0; S.lockMsg = ""; S.bioT = false; render(); enviarCola(false); cargarEstado(true); }
 
   /* ---------- acciones ---------- */
   var acciones = {
@@ -759,7 +991,7 @@
       S.lockIn += v; S.lockErr = false; render();
       if (S.lockIn.length === PREF.lock.len) {
         hashLock(S.lockIn, PREF.lock.s).then(function (h) {
-          if (h === PREF.lock.h) { S.locked = false; S.lockIn = ""; S.lockFallos = 0; S.lockMsg = ""; render(); enviarCola(false); cargarEstado(true); return; }
+          if (h === PREF.lock.h) { desbloquear(); return; }
           S.lockFallos = (S.lockFallos || 0) + 1; S.lockIn = ""; S.lockErr = true;
           if (S.lockFallos >= 5) { S.lockBloq = Date.now() + 30000; S.lockFallos = 0; S.lockMsg = "Demasiados intentos. Espera 30 segundos."; } else S.lockMsg = "Código incorrecto";
           render();
@@ -779,6 +1011,58 @@
     },
     metaGuardar: function () { app("meta_ahorro_guardar", { modo: S.metaTipo, valor: $("#m-val").value.trim().replace(",", ".") }).then(function (j) { cerrarHoja(); toast(j.mensaje, "ok"); cargarEstado(true); }).catch(fail); },
     metaQuitar: function () { app("meta_ahorro_guardar", { valor: 0 }).then(function (j) { cerrarHoja(); toast(j.mensaje, "ok"); cargarEstado(true); }).catch(fail); },
+    /* --- v1.7: registrar más rápido, plantillas, dictado, comprobante, retos, Face ID --- */
+    hojaVoz: hojaVoz, vozMic: vozMic,
+    vozUsar: function () {
+      var p = parseVoz($("#v-txt").value);
+      if (!p.monto && !p.lugar && !p.detalle) { toast("Dime el monto y el lugar", "err"); return; }
+      S.F.modo = "gasto"; if (p.monto) S.F.monto = p.monto; if (p.lugar) { S.F.lugar = p.lugar; S.F.catAuto = true; S.F.cat = ""; } if (p.detalle) S.F.detalle = p.detalle; if (p.metodo) S.F.metodo = p.metodo;
+      cerrarHoja(); render();
+      if (p.lugar) call({ tipo: "sugerir", lugar: p.lugar }).then(function (j) { if (j && j.habitual && S.F.catAuto && !S.F.cat) { S.F.cat = j.habitual; S.F.habitual = j.habitual; if (S.tab === "registrar") render(); } }).catch(function () {});
+    },
+    foto: function () { var f = $("#f-foto"); if (f) f.click(); },
+    fotoQuitar: function () { S.F.foto = ""; render(); },
+    tpl: function (v) { hojaTpl(+v); },
+    tplGuardar: function () {
+      var F = S.F, monto = parseFloat(String(F.monto).replace(",", "."));
+      if (!(monto > 0) || !F.lugar.trim()) { toast("Primero escribe el monto y elige el lugar", "err"); return; }
+      if (tplLista().length >= 8) { toast("Ya tienes 8 plantillas. Borra alguna primero.", "err"); return; }
+      abrirHoja('<div class="grab"></div><h3>⭐ Guardar plantilla</h3><p class="hint">Se guarda el monto, el lugar, la categoría y el método de pago.</p><div><label class="l">Nombre</label><input class="field" id="tp-n" maxlength="24" autocomplete="off" value="' + esc(F.detalle || F.lugar) + '"></div><button class="btn" data-a="tplOk">Guardar</button><button class="btn sec2" data-a="cerrar">Cancelar</button>');
+    },
+    tplOk: function () {
+      var F = S.F, n = $("#tp-n").value.trim(); if (!n) { toast("Ponle un nombre", "err"); return; }
+      PREF.plantillas = tplLista().concat([{ n: n, monto: parseFloat(String(F.monto).replace(",", ".")), lugar: F.lugar.trim(), cat: F.cat, metodo: F.metodo, detalle: F.detalle.trim() }]);
+      guardarPref(); cerrarHoja(); toast("⭐ Plantilla guardada", "ok"); render();
+    },
+    tplUsar: function (v) {
+      var t = tplLista()[+v]; if (!t) return;
+      S.F.modo = "gasto"; S.F.monto = String(t.monto); S.F.lugar = t.lugar; S.F.cat = t.cat; S.F.catAuto = false; S.F.metodo = t.metodo; S.F.detalle = t.detalle || ""; cerrarHoja(); render();
+    },
+    tplYa: function (v) { var t = tplLista()[+v]; if (!t) return; cerrarHoja(); enviar(cuerpoTpl(t), t.lugar + " · " + money(t.monto), false); },
+    tplBorrar: function (v) { PREF.plantillas = tplLista().filter(function (x, i) { return i !== +v; }); guardarPref(); cerrarHoja(); render(); },
+    hojaReto: hojaReto,
+    rtDias: function (v) { S.RT.dias = +v; hojaReto(); },
+    rtModo: function (v) { S.RT.modo = v; hojaReto(); },
+    rtCrear: function () {
+      var RT = S.RT, tope = parseFloat(String(RT.tope || "").replace(",", "."));
+      if (RT.modo === "max" && !(tope > 0)) { toast("Escribe el máximo en soles", "err"); return; }
+      PREF.reto = { cat: RT.cat, nombre: (RT.modo === "max" ? "Menos en " : "Sin ") + RT.cat, ini: ymd(hoyE()), dias: RT.dias, tope: RT.modo === "max" ? tope : 0 };
+      S.RT = null; S.reto = null; S.retoTs = 0; guardarPref(); cerrarHoja(); toast("🎯 ¡Reto empezado!", "ok"); S.anim = true; render(); cargarReto(true);
+    },
+    hojaRetoDet: function () {
+      var r = PREF.reto; if (!r) return; var n = diasReto(r), fin = n > r.dias, R = S.reto, tot = R && R.key === r.ini + r.cat ? R.tot : null;
+      abrirHoja('<div class="grab"></div><h3>🎯 ' + esc(r.nombre) + '</h3><div class="card"><div class="kv"><span>Categoría</span><b>' + esc(r.cat) + '</b></div><div class="kv"><span>Duración</span><b>' + r.dias + ' días</b></div><div class="kv"><span>Empezó</span><b>' + esc(fechaCorta(r.ini)) + '</b></div><div class="kv"><span>Termina</span><b>' + esc(fechaCorta(finReto(r))) + '</b></div><div class="kv"><span>Meta</span><b>' + (r.tope > 0 ? "Menos de " + money(r.tope) : "Sin gastar nada") + '</b></div><div class="kv"><span>Gastado en el reto</span><b>' + (tot === null ? "…" : money(tot)) + '</b></div></div>' +
+        (fin ? '<button class="btn" data-a="retoNuevo">Crear otro reto</button>' : "") + '<button class="btn bad" data-a="retoQuitar">' + (fin ? "Quitar este reto" : "Abandonar el reto") + '</button><button class="btn sec2" data-a="cerrar">Cerrar</button>');
+    },
+    retoNuevo: function () { PREF.reto = null; S.reto = null; guardarPref(); hojaReto(); render(); },
+    retoQuitar: function () { PREF.reto = null; S.reto = null; guardarPref(); cerrarHoja(); render(); },
+    abrirRegistrar: function () { PREF.abrirRegistrar = !PREF.abrirRegistrar; guardarPref(); render(); },
+    bioToggle: function () {
+      if (PREF.bio) { PREF.bio = null; guardarPref(); toast("Face ID desactivado"); render(); return; }
+      if (!PREF.lock) { toast("Primero activa el candado con código", "err"); return; }
+      bioActivar().then(function () { toast("✅ Face ID activado", "ok"); render(); }).catch(function () { toast("No se pudo activar Face ID. Sigue usando tu código.", "err", 4500); });
+    },
+    bioEntrar: bioEntrar,
     conectar: conectar,
     demo: function () { cfg = { demo: true }; store("mg_cfg", cfg); S.estado = null; S.tab = "inicio"; cargarEstado(false); render(); }
   };
@@ -788,7 +1072,9 @@
     var el = e.target.closest("[data-a]"); if (!el) return;
     var a = acciones[el.getAttribute("data-a")]; if (a) { e.preventDefault(); a(el.getAttribute("data-v")); }
   });
+  document.addEventListener("change", function (e) { if (e.target.id === "rt-cat" && S.RT) S.RT.cat = e.target.value; });
   document.addEventListener("input", function (e) {
+    if (e.target.id === "rt-tope" && S.RT) { S.RT.tope = e.target.value; return; }
     if (e.target.id !== "g-q") return;
     S.G.q = e.target.value; clearTimeout(S.tq);
     S.tq = setTimeout(function () { var pos = e.target.selectionStart; S.G.data = null; cargarGastos(); }, 350);
@@ -832,11 +1118,13 @@
   var vis = Date.now(), oculta = 0;
   document.addEventListener("visibilitychange", function () {
     if (document.hidden) { oculta = Date.now(); vis = Date.now(); S.ver.ahorro = false; S.ver.deuda = false; return; }
-    if (PREF.lock && cfg && !cfg.demo && !S.locked && oculta && Date.now() - oculta >= PREF.lock.min * 60000) { S.locked = true; S.lockIn = ""; S.lockMsg = ""; render(); }
+    if (PREF.lock && cfg && !cfg.demo && !S.locked && oculta && Date.now() - oculta >= PREF.lock.min * 60000) { S.locked = true; S.bioT = false; S.lockIn = ""; S.lockMsg = ""; render(); }
     if (cfg && !S.locked) { render(); enviarCola(false); if (Date.now() - vis > 60000) { vis = Date.now(); cargarEstado(true); if (S.tab === "gastos") cargarGastos(); } }
   });
   window.addEventListener("online", function () { enviarCola(false); cargarEstado(true); });
   if (cfg && !cfg.demo && PREF.lock) { S.locked = true; S.lockIn = ""; }
+  if (PREF.abrirRegistrar) S.tab = "registrar";
+  bioDetectar();
   S.anim = true;
   render();
   if (cfg && !S.locked) { cargarEstado(true); enviarCola(false); }

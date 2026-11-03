@@ -86,8 +86,9 @@ main.anim>*{animation:rise .55s var(--ease) both;animation-delay:calc(var(--i,0)
 .tab svg{display:block;margin:0 auto 3px;width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .35s var(--expo)}
 .tab.on{color:var(--pone)}.tab.on svg{transform:translateY(-1px) scale(1.08)}
 .tab.plus,.tab.plus.on{color:var(--navy)}
-.tab.plus .c{width:50px;height:24px;border-radius:13px;background:var(--btng);margin:0 auto 3px;display:grid;place-items:center;box-shadow:0 4px 10px rgba(0,0,0,.25)}
-.tab.plus .c svg{stroke:var(--onbtn);margin:0;stroke-width:2.4;width:18px;height:18px}
+.tab.plus .c{width:58px;height:58px;border-radius:50%;margin-top:-30px!important;box-shadow:0 0 0 5px var(--bg),0 8px 18px rgba(0,0,0,.3)!important;background:var(--btng);margin:0 auto 3px;display:grid;place-items:center;box-shadow:0 4px 10px rgba(0,0,0,.25)}
+.tab.plus .c svg{stroke:var(--onbtn);margin:0;stroke-width:2.4;width:26px;height:26px}
+html.dock .tab.plus .c{box-shadow:0 0 0 5px var(--surf),0 8px 18px rgba(0,0,0,.3)!important}
 .tab.plus.on .c{transform:scale(1.08)}
 
 /* formularios */
@@ -261,7 +262,7 @@ label.l{display:block;font-size:11.5px;color:var(--mut);letter-spacing:.4px;text
 
 /* barra inferior pegada al borde (por defecto): ocupa todo el ancho y llega hasta abajo, como en otras apps */
 html.dock,html.dock body{background-color:var(--surf)}
-html.dock .tabs{left:0;right:0;bottom:0;border-radius:0;border-width:1px 0 0;background:var(--surf);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none;padding:7px 6px calc(var(--sab) + 4px)}
+html.dock .tabs{overflow:visible;left:0;right:0;bottom:0;border-radius:0;border-width:1px 0 0;background:var(--surf);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none;padding:7px 6px calc(var(--sab) + 4px)}
 html.dock .tabs .ind{top:7px;bottom:calc(var(--sab) + 4px)}
 html.dock #capb{display:none}
 html.dock main{padding-bottom:calc(var(--sab) + 100px)}
@@ -272,3 +273,18 @@ html.dock main{padding-bottom:calc(var(--sab) + 100px)}
 .eye.w{background:var(--ccp);color:var(--cct)}
 
 button.card{display:block;width:100%;text-align:left;font:inherit;color:inherit}
+
+/* v1.7 */
+.two2{display:flex;gap:12px;margin-top:8px}.two2>div{flex:1}
+.puedo{border-radius:18px;padding:12px 14px;font-size:13.5px;line-height:1.55;background:var(--cardg);border:1px solid var(--line);border-left:5px solid var(--ok)}
+.puedo b{display:block;font-size:14.5px;margin-bottom:2px}
+.puedo.n1{border-left-color:#C98A1B}.puedo.n2{border-left-color:var(--bad)}
+.btn.mini2{padding:12px 8px;font-size:14px;border-radius:15px;font-weight:600;box-shadow:none}
+.fotow{display:flex;align-items:center;gap:12px}.fotow img{width:84px;height:84px;object-fit:cover;border-radius:14px;border:1px solid var(--line)}
+.goal2{display:flex;gap:13px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}.goal2:first-child{border-top:0}
+.goal2 .rg{width:56px;height:56px;flex:none}.rg circle{transition:stroke-dasharray 1s var(--ease)}
+.goal2 .gt{flex:1;min-width:0}.goal2 .h{display:flex;justify-content:space-between;gap:8px;font-size:14px}.goal2 .h span{color:var(--mut);font-size:13px}
+.goal2 .est{margin-top:3px}
+textarea.field{min-height:84px;resize:none;line-height:1.4}
+a.btn{text-decoration:none}
+.filt .chip{flex:none;white-space:nowrap}

@@ -74,3 +74,17 @@ La app se actualiza sola al volver a abrirla con internet. Si cambias el script,
 - Editar, borrar, pagar fijos y actualizar la tarjeta necesitan internet (solo registrar gasto/ingreso funciona sin conexión).
 - Las notificaciones push de iPhone solo existen para páginas agregadas a la pantalla de inicio y no están incluidas en esta versión.
 - Borrar quita la fila del Excel; no hay «deshacer».
+
+
+## Ajuste v1.5.2
+Cabecera recta. Se corrigió el guardado de la meta de ahorro mensual (necesita el script v3.4.1 o superior).
+
+## Paleta Slate · v1.6.0
+Nueva paleta negro/blanco/gris con degradado, modo claro y oscuro (automático por defecto) e icono negro. Para ver el icono nuevo, quita la app de la pantalla de inicio y vuelve a agregarla.
+
+## Novedades · v1.7.0 (necesita el script v3.5.0)
+- Botón «+» central grande; opción de abrir directamente en Registrar.
+- Plantillas de gasto (⭐), dictado (🎤) y foto del comprobante (📷, se guarda en tu Drive).
+- «¿Puedo gastarlo?», «Tu ritmo del mes» (gasto sugerido de hoy y proyección al cierre).
+- Metas con anillo y fecha estimada; retos de ahorro.
+- Face ID / Touch ID para entrar (el código queda de respaldo).
