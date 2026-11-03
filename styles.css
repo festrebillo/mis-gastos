@@ -280,7 +280,6 @@ button.card{display:block;width:100%;text-align:left;font:inherit;color:inherit}
 .puedo b{display:block;font-size:14.5px;margin-bottom:2px}
 .puedo.n1{border-left-color:#C98A1B}.puedo.n2{border-left-color:var(--bad)}
 .btn.mini2{padding:12px 8px;font-size:14px;border-radius:15px;font-weight:600;box-shadow:none}
-.fotow{display:flex;align-items:center;gap:12px}.fotow img{width:84px;height:84px;object-fit:cover;border-radius:14px;border:1px solid var(--line)}
 .goal2{display:flex;gap:13px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}.goal2:first-child{border-top:0}
 .goal2 .rg{width:56px;height:56px;flex:none}.rg circle{transition:stroke-dasharray 1s var(--ease)}
 .goal2 .gt{flex:1;min-width:0}.goal2 .h{display:flex;justify-content:space-between;gap:8px;font-size:14px}.goal2 .h span{color:var(--mut);font-size:13px}
@@ -288,3 +287,6 @@ button.card{display:block;width:100%;text-align:left;font:inherit;color:inherit}
 textarea.field{min-height:84px;resize:none;line-height:1.4}
 a.btn{text-decoration:none}
 .filt .chip{flex:none;white-space:nowrap}
+.qrbox{position:relative;border-radius:20px;overflow:hidden;background:#000;aspect-ratio:1/1;max-height:44vh;width:100%}
+.qrbox video{width:100%;height:100%;object-fit:cover;display:block}
+.qrframe{position:absolute;inset:18%;border:3px solid rgba(255,255,255,.92);border-radius:18px;box-shadow:0 0 0 999px rgba(0,0,0,.38);pointer-events:none}

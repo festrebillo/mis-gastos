@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.7.0";
+  var VERSION = "1.8.0";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -63,7 +63,7 @@
     F: nuevoForm(), G: { mes: mesClave(new Date()), q: "", cat: "", metodo: "", data: null, cargando: false },
     T: { cargando: false }, P: {}, FJ: { data: null, sel: {} }, IN: { mes: mesClave(new Date()), data: null }, lugares: []
   };
-  function nuevoForm() { return { modo: "gasto", monto: "", lugar: "", cat: "", catAuto: true, metodo: "Saldo Disponible", detalle: "", desc: "", foto: "", guardando: false }; }
+  function nuevoForm() { return { modo: "gasto", monto: "", lugar: "", cat: "", catAuto: true, metodo: "Saldo Disponible", detalle: "", desc: "", ruc: "", fechaDoc: "", guardando: false }; }
 
   S.ver = { ahorro: false, deuda: false };
   S.ocultoTodo = PREF.ocultarAlAbrir === true;      // por defecto solo «Ahorro» y «Deuda» arrancan ocultos; lo demás se ve
@@ -236,7 +236,8 @@
     var F = S.F, E = S.estado, h = bannerCola();
     h += '<div class="seg" role="tablist"><button class="' + (F.modo === "gasto" ? "on" : "") + '" data-a="modo" data-v="gasto">Gasto</button><button class="' + (F.modo === "ingreso" ? "on" : "") + '" data-a="modo" data-v="ingreso">Ingreso</button><button class="' + (F.modo === "fijos" ? "on" : "") + '" data-a="modo" data-v="fijos">Fijos</button></div>';
     if (F.modo === "fijos") return h + vistaFijos();
-    if (F.modo === "gasto") h += '<div class="filt"><button class="chip" data-a="hojaVoz">🎤 Dictar</button>' + tplLista().map(function (x, i) { return '<button class="chip" data-a="tpl" data-v="' + i + '">⭐ ' + esc(x.n) + ' · S/ ' + x.monto + '</button>'; }).join("") + '</div>';
+    if (F.modo === "gasto" && F.fechaDoc) h += '<div class="hint">🧾 Fecha de la boleta: <b>' + esc(fechaCorta(F.fechaDoc)) + '</b> · <button class="linkbtn" data-a="quitarFechaDoc">usar hoy</button></div>';
+    if (F.modo === "gasto") h += '<div class="filt"><button class="chip" data-a="hojaQR">📷 Escanear QR</button><button class="chip" data-a="hojaVoz">🎤 Dictar</button>' + tplLista().map(function (x, i) { return '<button class="chip" data-a="tpl" data-v="' + i + '">⭐ ' + esc(x.n) + ' · S/ ' + x.monto + '</button>'; }).join("") + '</div>';
     h += '<div class="amt"><span>S/</span><input id="f-monto" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" autocomplete="off" placeholder="0.00" value="' + esc(F.monto) + '" aria-label="Monto"></div>';
     if (F.modo === "gasto") {
       h += '<div><label class="l">Lugar</label><button class="catline" data-a="elegirLugar"><span>' + (F.lugar ? "📍 " + esc(F.lugar) : '<span style="color:var(--mut)">Toca para elegir el lugar</span>') + '</span><em>' + (F.lugar ? "Cambiar" : "Elegir") + '</em></button></div>';
@@ -244,8 +245,7 @@
       h += '<div><label class="l">Pagado con</label><div class="mset"><button class="' + (F.metodo === "Saldo Disponible" ? "on" : "") + '" data-a="metodo" data-v="Saldo Disponible">💵 Saldo Disponible</button><button class="' + (F.metodo === "Tarjeta de Crédito" ? "on" : "") + '" data-a="metodo" data-v="Tarjeta de Crédito">💳 Tarjeta</button></div></div>';
       h += '<div><label class="l" for="f-det">Detalle (opcional)</label><input class="field" id="f-det" autocomplete="off" placeholder="Almuerzo, regalo…" value="' + esc(F.detalle) + '"></div>';
       h += '<div id="puedo-w">' + puedoHtml() + '</div>';
-      h += '<div class="row2"><button class="btn sec2 mini2" data-a="foto">' + (F.foto ? "📷 Cambiar foto" : "📷 Comprobante") + '</button><button class="btn sec2 mini2" data-a="tplGuardar">⭐ Guardar plantilla</button></div>' +
-        (F.foto ? '<div class="fotow"><img src="' + F.foto + '" alt="Comprobante"><button class="linkbtn" data-a="fotoQuitar">Quitar foto</button></div>' : "") + '<input type="file" id="f-foto" accept="image/*" hidden>';
+      h += '<button class="btn sec2 mini2" data-a="tplGuardar">⭐ Guardar como plantilla</button>';
     } else {
       h += '<div><label class="l" for="f-desc">Descripción</label><input class="field" id="f-desc" autocomplete="off" placeholder="Ej.: Primera Quincena" value="' + esc(F.desc) + '"><div class="chips">' +
         ["Primera Quincena", "Segunda Quincena", "Ingreso Extra"].map(function (x) { return '<button class="chip' + (F.desc === x ? " sel" : "") + '" data-a="desc" data-v="' + x + '">' + x + '</button>'; }).join("") + '</div></div>';
@@ -268,7 +268,6 @@
   function enlazarRegistrar() {
     var m = $("#f-monto"), l = $("#f-lugar"), d = $("#f-det"), ds = $("#f-desc");
     if (m) m.addEventListener("input", function () { var v = limpiarNum(m.value); if (v !== m.value) m.value = v; S.F.monto = v; pintarPuedo(); });
-    var ff = $("#f-foto"); if (ff) ff.addEventListener("change", function () { procesarFoto(ff.files && ff.files[0]); });
     if (d) d.addEventListener("input", function () { S.F.detalle = d.value; });
     if (ds) ds.addEventListener("input", function () { S.F.desc = ds.value; });
     if (l) {
@@ -299,11 +298,14 @@
       if (!F.lugar.trim()) { toast("Escribe o elige el lugar", "err"); return; }
       body = { tipo: "gasto", tienda: F.lugar.trim(), categoria: F.cat, metodoPago: F.metodo, monto: monto, descripcion: F.detalle.trim() };
     } else body = { tipo: "ingreso", descripcion: F.desc.trim() || "Ingreso Extra", monto: monto };
-    if (F.modo === "gasto" && F.foto) body.foto = F.foto;
+    if (F.modo === "gasto") {
+      if (F.fechaDoc) body.fecha = F.fechaDoc + "T12:00:00";                       // fecha impresa en la boleta
+      if (F.ruc && F.lugar.trim()) { PREF.rucs = PREF.rucs || {}; PREF.rucs[F.ruc] = F.lugar.trim(); guardarPref(); }   // la próxima vez este RUC se reconoce solo
+    }
     enviar(body, (F.modo === "gasto" ? body.tienda : body.descripcion) + " · " + money(body.monto), true);
   }
   function enviar(body, nota, desdeForm) {
-    body.idr = nuevoId(); body.fecha = fechaLocal(new Date());     // id único (evita duplicados al reenviar) y hora real del registro
+    body.idr = nuevoId(); body.fecha = body.fecha || fechaLocal(new Date());     // id único (evita duplicados al reenviar) y hora real del registro
     if (desdeForm) { S.F.guardando = true; render(); }
     return call(body).then(function (j) {
       if (j.status === "error") throw new Error(j.mensaje);
@@ -663,7 +665,7 @@
 
   /* ---------- hojas (diálogos) ---------- */
   function abrirHoja(html) { var w = $("#sheet"); w.innerHTML = '<div class="sheet" role="dialog" aria-modal="true">' + html + '</div>'; w.hidden = false; }
-  function cerrarHoja() { var w = $("#sheet"); w.hidden = true; w.innerHTML = ""; }
+  function cerrarHoja() { qrParar(); var w = $("#sheet"); w.hidden = true; w.innerHTML = ""; }
   $("#sheet").addEventListener("click", function (e) { if (e.target === this) cerrarHoja(); });
 
   /* ---------- datos ---------- */
@@ -797,23 +799,93 @@
     try { rc.start(); if (b) b.textContent = "🎙️ Escuchando…"; } catch (e) { toast("No se pudo iniciar el micrófono", "err"); }
   }
 
-  /* ---- comprobante (foto): se reduce antes de enviar ---- */
-  function procesarFoto(file) {
+  /* ---- Escanear el QR de la boleta o factura electrónica (SUNAT): RUC|tipo|serie|número|IGV|total|fecha|… ---- */
+  function parseQR(txt) {
+    var p = String(txt || "").trim().split("|");
+    if (p.length < 7 || !/^\d{11}$/.test(p[0].trim())) return null;
+    var total = parseFloat(String(p[5]).replace(",", "."));
+    if (!(total > 0)) return null;
+    var f = String(p[6]).trim(), fecha = "", m;
+    if ((m = /^(\d{4})-(\d{2})-(\d{2})/.exec(f))) fecha = m[1] + "-" + m[2] + "-" + m[3];
+    else if ((m = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(f))) fecha = m[3] + "-" + m[2] + "-" + m[1];
+    var tipo = p[1].trim();
+    return { ruc: p[0].trim(), doc: { "01": "Factura", "03": "Boleta", "07": "Nota de crédito", "08": "Nota de débito" }[tipo] || "Comprobante", serie: p[2].trim(), numero: p[3].trim().replace(/^0+(?=\d)/, ""), total: total, fecha: fecha };
+  }
+  function aplicarQR(q) {
+    var F = S.F; F.modo = "gasto"; F.monto = String(Math.round(q.total * 100) / 100); F.ruc = q.ruc;
+    if (!F.detalle) F.detalle = q.doc + " " + q.serie + "-" + q.numero;
+    F.fechaDoc = q.fecha && q.fecha !== ymd(new Date()) ? q.fecha : "";
+    var lug = (PREF.rucs || {})[q.ruc];
+    cerrarHoja();
+    if (lug) { F.lugar = lug; F.catAuto = true; F.cat = ""; }
+    render(); celebrar();
+    if (lug) call({ tipo: "sugerir", lugar: lug }).then(function (j) { if (j && j.habitual && S.F.catAuto && !S.F.cat) { S.F.cat = j.habitual; S.F.habitual = j.habitual; if (S.tab === "registrar") render(); } }).catch(function () {});
+    else toast("Leído: " + moneyRaw(q.total) + ". Elige el lugar; la próxima vez este comercio se llena solo.", "ok", 5200);
+  }
+  var QRS = null;
+  function cargarJsQR(ok, mal) {
+    if (window.jsQR) { ok(); return; }
+    var s = document.createElement("script"); s.src = "jsqr.js"; s.onload = ok; s.onerror = mal; document.head.appendChild(s);
+  }
+  function qrParar() {
+    if (!QRS) return;
+    QRS.vivo = false; if (QRS.raf) cancelAnimationFrame(QRS.raf);
+    try { if (QRS.stream) QRS.stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+    QRS = null;
+  }
+  function qrMsg(t) { var m = $("#qr-msg"); if (m) m.textContent = t; }
+  function qrIntentar(txt) {          // devuelve true si era el QR de una boleta o factura
+    var q = parseQR(txt);
+    if (!q) { qrMsg("Leí un QR, pero no es de una boleta o factura electrónica. Prueba con el de la boleta."); return false; }
+    qrParar(); aplicarQR(q); return true;
+  }
+  function decodificar(img, w, h, fuerte) {
+    var c = document.createElement("canvas"), k = Math.min(1, 900 / Math.max(w, h));
+    c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+    var x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0, c.width, c.height);
+    var d = x.getImageData(0, 0, c.width, c.height);
+    return window.jsQR(d.data, d.width, d.height, { inversionAttempts: fuerte ? "attemptBoth" : "dontInvert" });
+  }
+  function hojaQR() {
+    abrirHoja('<div class="grab"></div><h3>📷 Escanear QR</h3><p class="hint">Apunta al código QR de tu boleta o factura electrónica. Se leen el monto, la fecha y el RUC del comercio.</p>' +
+      '<div class="qrbox"><video id="qr-v" playsinline muted autoplay></video><i class="qrframe"></i></div><div id="qr-msg" class="hint" style="text-align:center">Abriendo la cámara…</div>' +
+      '<button class="btn sec2" data-a="qrFoto">Usar una foto del QR</button><input type="file" id="qr-f" accept="image/*" hidden><button class="btn sec2" data-a="cerrar">Cancelar</button>');
+    var f = $("#qr-f"); if (f) f.addEventListener("change", function () { qrDeFoto(f.files && f.files[0]); });
+    cargarJsQR(function () {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { qrMsg("Este teléfono no deja usar la cámara aquí. Usa «Usar una foto del QR»."); return; }
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 } }, audio: false }).then(function (stream) {
+        var v = $("#qr-v"); if (!v || $("#sheet").hidden) { stream.getTracks().forEach(function (t) { t.stop(); }); return; }
+        QRS = { stream: stream, vivo: true, ult: 0 }; v.srcObject = stream; var pl = v.play(); if (pl && pl.catch) pl.catch(function () {});
+        qrMsg("Busca el QR de la boleta y mantenlo quieto.");
+        (function ciclo(t) {
+          if (!QRS || !QRS.vivo) return;
+          QRS.raf = requestAnimationFrame(ciclo);
+          if (t - QRS.ult < 160 || !v.videoWidth) return;
+          QRS.ult = t;
+          var r = decodificar(v, v.videoWidth, v.videoHeight, false);
+          if (r && r.data) qrIntentar(r.data);
+        })(0);
+      }).catch(function () { qrMsg("No se pudo abrir la cámara (revisa el permiso). Usa «Usar una foto del QR»."); });
+    }, function () { qrMsg("No se pudo cargar el lector. Revisa tu conexión e inténtalo de nuevo."); });
+  }
+  function qrDeFoto(file) {
     if (!file) return;
+    qrMsg("Leyendo la foto…");
     var fr = new FileReader();
     fr.onload = function () {
       var img = new Image();
       img.onload = function () {
-        var k = Math.min(1, 1280 / Math.max(img.width, img.height)), c = document.createElement("canvas");
-        c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
-        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-        S.F.foto = c.toDataURL("image/jpeg", 0.72); render();
+        cargarJsQR(function () {
+          var r = decodificar(img, img.width, img.height, true);
+          if (r && r.data) qrIntentar(r.data); else qrMsg("No pude leer el QR en la foto. Acércate, que se vea completo, nítido y sin reflejos.");
+        }, function () { qrMsg("No se pudo cargar el lector."); });
       };
-      img.onerror = function () { toast("No se pudo leer la foto", "err"); };
+      img.onerror = function () { qrMsg("No se pudo abrir la foto."); };
       img.src = fr.result;
     };
     fr.readAsDataURL(file);
   }
+
   var RE_ADJ = /\s*📎\s*(https:\/\/\S+)\s*$/;
   function detLimpio(d) { return String(d || "").replace(RE_ADJ, "").trim(); }
   function detLink(d) { var m = RE_ADJ.exec(String(d || "")); return m ? m[1] : ""; }
@@ -1020,8 +1092,9 @@
       cerrarHoja(); render();
       if (p.lugar) call({ tipo: "sugerir", lugar: p.lugar }).then(function (j) { if (j && j.habitual && S.F.catAuto && !S.F.cat) { S.F.cat = j.habitual; S.F.habitual = j.habitual; if (S.tab === "registrar") render(); } }).catch(function () {});
     },
-    foto: function () { var f = $("#f-foto"); if (f) f.click(); },
-    fotoQuitar: function () { S.F.foto = ""; render(); },
+    hojaQR: hojaQR,
+    qrFoto: function () { var f = $("#qr-f"); if (f) f.click(); },
+    quitarFechaDoc: function () { S.F.fechaDoc = ""; render(); },
     tpl: function (v) { hojaTpl(+v); },
     tplGuardar: function () {
       var F = S.F, monto = parseFloat(String(F.monto).replace(",", "."));

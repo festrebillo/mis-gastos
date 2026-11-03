@@ -82,9 +82,12 @@ Cabecera recta. Se corrigió el guardado de la meta de ahorro mensual (necesita 
 ## Paleta Slate · v1.6.0
 Nueva paleta negro/blanco/gris con degradado, modo claro y oscuro (automático por defecto) e icono negro. Para ver el icono nuevo, quita la app de la pantalla de inicio y vuelve a agregarla.
 
-## Novedades · v1.7.0 (necesita el script v3.5.0)
+## Novedades · v1.7.0 (necesita el script v3.4.1 o superior)
 - Botón «+» central grande; opción de abrir directamente en Registrar.
-- Plantillas de gasto (⭐), dictado (🎤) y foto del comprobante (📷, se guarda en tu Drive).
+- Plantillas de gasto (⭐) y dictado (🎤).
 - «¿Puedo gastarlo?», «Tu ritmo del mes» (gasto sugerido de hoy y proyección al cierre).
 - Metas con anillo y fecha estimada; retos de ahorro.
 - Face ID / Touch ID para entrar (el código queda de respaldo).
+
+## Escanear QR · v1.8.0
+En Registrar, «📷 Escanear QR» lee el código QR de la boleta o factura electrónica y llena el monto, el detalle y la fecha. La primera vez de cada comercio eliges el lugar; la app lo recuerda por su RUC y la siguiente vez lo llena sola. No se guarda ninguna foto.

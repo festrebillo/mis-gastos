@@ -1,7 +1,7 @@
 /* Service worker: guarda la "cáscara" de la app para que abra al instante y sin conexión.
    Los datos NUNCA se guardan aquí: las llamadas al script de Google no pasan por este caché. */
-const VERSION = "mis-gastos-v15";
-const ARCHIVOS = ["./", "index.html", "styles.css", "app.js", "demo.js", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
+const VERSION = "mis-gastos-v16";
+const ARCHIVOS = ["./", "index.html", "styles.css", "app.js", "demo.js", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png", "jsqr.js"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));
