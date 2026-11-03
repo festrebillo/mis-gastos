@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.9.1";
+  var VERSION = "1.9.2";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -1162,7 +1162,8 @@
     var p = s.querySelector(".sp-sd"), E = S.estado; if (p) p.textContent = saludo() + (E && E.nombre ? ", " + E.nombre : "") + " " + saludoIco();
     function salir() { clearTimeout(S.tsp); s.classList.add("out"); setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s); }, 650); }
     s.addEventListener("click", salir);                                         // un toque y pasa de largo
-    clearTimeout(S.tsp); S.tsp = setTimeout(salir, reducido() ? 250 : (ms || 2400));
+    clearTimeout(S.tsp); S.tsp = setTimeout(salir, reducido() ? 250 : (ms || 6000));      // tope de seguridad
+    if (p && p.getAnimations && !reducido()) Promise.all(p.getAnimations().map(function (an) { return an.finished; })).then(function () { clearTimeout(S.tsp); S.tsp = setTimeout(salir, 800); }).catch(function () {});   // al terminar el saludo se queda un instante y pasa a la app
   }
   function inicioNuevo() {
     S.tab = PREF.abrirRegistrar ? "registrar" : "inicio"; S.sub = null; S.vk = null; S.anim = true; cerrarHoja();
