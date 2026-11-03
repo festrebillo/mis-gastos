@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.10.0";
+  var VERSION = "1.11.0";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -168,7 +168,7 @@
   function skel(n) { var h = ""; for (var i = 0; i < (n || 3); i++) h += '<div class="sk" style="height:' + (i === 0 ? 132 : 104) + 'px"></div>'; return h; }
   function ocupado(txt) { $("#busy-t").textContent = txt || "Cargando…"; $("#busy").classList.add("on"); }
   function libre() { $("#busy").classList.remove("on"); }
-  function celebrar() { var o = $("#okpop"); o.classList.remove("go"); void o.offsetWidth; o.classList.add("go"); }
+  function celebrar() { var o = $("#okpop"); o.classList.remove("go"); void o.offsetWidth; o.classList.add("go"); if (window.MGM) MGM.reaccionar("gasto"); }
   function limpiarNum(v) { v = String(v).replace(/[^0-9.,]/g, ""); var i = v.search(/[.,]/); return i > -1 ? v.slice(0, i + 1) + v.slice(i + 1).replace(/[.,]/g, "") : v; }
   function swr(inner, editA, fila, tipo) {
     return '<div class="swr"><div class="acts"><button class="ed" data-a="' + editA + '" data-v="' + fila + '">' + I.edit + 'Editar</button><button class="bo" data-a="borrarAsk" data-v="' + tipo + ':' + fila + '">' + I.trash + 'Borrar</button></div><div class="fg">' + inner + '</div></div>';
@@ -181,8 +181,8 @@
   function render() {
     var el = $("#app");
     var ae = document.activeElement, aeId = ae && ae.id === "g-q" ? ae.id : null, aeSel = aeId ? ae.selectionStart : 0;
-    if (!cfg) { document.documentElement.setAttribute("data-s", "auth"); el.removeAttribute("data-skel"); el.innerHTML = vistaSetup(); return; }
-    if (S.locked) { document.documentElement.setAttribute("data-s", "auth"); cerrarHoja(); el.removeAttribute("data-skel"); el.innerHTML = vistaLock(); if (PREF.bio && !S.bioT) { S.bioT = true; setTimeout(bioEntrar, 450); } return; }
+    if (!cfg) { document.documentElement.setAttribute("data-s", "auth"); el.removeAttribute("data-skel"); el.innerHTML = vistaSetup(); mascotaPantalla(); return; }
+    if (S.locked) { document.documentElement.setAttribute("data-s", "auth"); cerrarHoja(); el.removeAttribute("data-skel"); el.innerHTML = vistaLock(); if (PREF.bio && !S.bioT) { S.bioT = true; setTimeout(bioEntrar, 450); } mascotaPantalla(); return; }
     if (el.getAttribute("data-skel") !== "1") { el.innerHTML = '<div class="hdr" id="hdr"></div><main id="main"></main>' + tabsHtml(); el.setAttribute("data-skel", "1"); S.vk = null; }
     document.documentElement.setAttribute("data-s", "main");
     var h = "", m = "";
@@ -202,6 +202,7 @@
     } else main.classList.remove("anim");
     if (S.tab === "registrar") enlazarRegistrar();
     if (aeId && $("#" + aeId)) { var n = $("#" + aeId); n.focus(); try { n.setSelectionRange(aeSel, aeSel); } catch (x) {} }
+    mascotaPantalla();
   }
 
   /* ---- Inicio ---- */
@@ -644,6 +645,9 @@
       COLORES.map(function (x) { return '<button class="cs' + (cc.id === x.id ? " on" : "") + '" data-a="color" data-v="' + x.id + '" aria-label="' + esc(x.n) + '"><i style="background:' + (x.a1 ? "linear-gradient(135deg," + x.a1 + "," + x.a2 + ")" : "linear-gradient(135deg,#0B0B0B,#8A8A92)") + '"></i><span>' + esc(x.n) + '</span></button>'; }).join("") +
       '</div><div class="lbl" style="margin-top:14px">Personalizar</div><div class="row2" style="margin-top:6px"><label class="cpk"><input type="color" id="c-a1" value="' + pk.a1 + '"><span>Color 1</span></label><label class="cpk"><input type="color" id="c-a2" value="' + pk.a2 + '"><span>Color 2</span></label></div>' +
       (cc.id === "custom" ? '<p class="hint" style="margin-top:6px">Usando tu combinación personalizada.</p>' : "") + '</div>';
+    h += '<div class="card"><div class="lbl">Mascota</div><div class="seg" style="margin-top:8px">' +
+      [["activa", "Activa"], ["tranquila", "Tranquila"], ["apagada", "Apagada"]].map(function (o) { return '<button class="' + ((PREF.mascota || "activa") === o[0] ? "on" : "") + '" data-a="mascota" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
+      '</div><p class="hint" style="margin-top:6px">Tu dragón pasea y hace travesuras mientras la app está abierta, sin tapar nada ni bloquear tus toques. «Tranquila»: solo duerme y escupe chispas en su sitio. En «Registrar» se esconde mientras escribes. Evoluciona con tus logros.</p></div>';
     h += '<div class="card"><div class="lbl">Inicio rápido</div><button class="cb' + (PREF.abrirRegistrar ? " on" : "") + '" data-a="abrirRegistrar" style="margin-top:4px"><span class="box">' + (PREF.abrirRegistrar ? "✓" : "") + '</span><span style="flex:1">Abrir la app directamente en «Registrar» con el teclado de números</span></button></div>';
     h += '<div class="card"><div class="lbl">Barra inferior</div><div class="seg" style="margin-top:8px">' +
       [[false, "Pegada abajo"], [true, "Flotante"]].map(function (o) { return '<button class="' + ((PREF.flotante === true) === o[0] ? "on" : "") + '" data-a="barra" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
@@ -1171,13 +1175,17 @@
       { id: "candado", e: "🔐", t: "App protegida", d: "Activa el candado con código o Face ID.", ok: !!(PREF.lock || PREF.bio), p: "En Ajustes" }
     ];
   }
+  /* ---------- mascota: etapa según tus logros y puente con mascota.js ---------- */
+  function logrosGanados() { return logrosDef().filter(logroOn).length; }
+  function dragonEtapa() { var n = logrosGanados(); return n >= 7 ? 3 : n >= 3 ? 2 : 1; }
+  function mascotaPantalla() { if (window.MGM) MGM.pantalla(); }
   function evaluarLogros() {
     var L = logrosDef(), prim = !PREF.logros, nuevos = [];
     PREF.logros = PREF.logros || {};
     L.forEach(function (x) { if (x.ok && !PREF.logros[x.id]) { PREF.logros[x.id] = ymd(new Date()); nuevos.push(x); } });
     if (!nuevos.length) { if (prim) guardarPref(); return; }
     guardarPref();
-    if (!prim) { toast("🏅 Nuevo logro: " + nuevos[0].t + (nuevos.length > 1 ? " (+" + (nuevos.length - 1) + " más)" : ""), "ok", 4800); celebrar(); }
+    if (!prim) { toast("🏅 Nuevo logro: " + nuevos[0].t + (nuevos.length > 1 ? " (+" + (nuevos.length - 1) + " más)" : ""), "ok", 4800); celebrar(); if (window.MGM) MGM.reaccionar("logro"); }
   }
   function logroOn(x) { return x.ok || !!(PREF.logros && PREF.logros[x.id]); }
   function atajosInicio() {
@@ -1187,7 +1195,7 @@
   function vistaLogros() {
     var L = logrosDef(), n = L.filter(logroOn).length, rp = S.RP;
     var h = '<div class="cc"><div class="lbl">Tus logros</div><div class="big">' + n + ' <sm>de ' + L.length + '</sm></div>' +
-      (rp && rp.racha != null ? '<div class="kv" style="margin-top:8px"><span>🔥 Racha actual</span><b>' + rp.racha + (rp.racha === 1 ? " día" : " días") + '</b></div>' : "") + '</div><div class="lgg">';
+      (rp && rp.racha != null ? '<div class="kv" style="margin-top:8px"><span>🔥 Racha actual</span><b>' + rp.racha + (rp.racha === 1 ? " día" : " días") + '</b></div>' : "") + '</div>' + (window.MGM && MGM.ok() ? MGM.tarjeta() : "") + '<div class="lgg">';
     L.forEach(function (x) {
       var f = PREF.logros && PREF.logros[x.id], on = logroOn(x);
       h += '<div class="logro' + (on ? " on" : "") + '"><span class="le">' + x.e + '</span><b>' + esc(x.t) + '</b><small>' + esc(x.d) + '</small><em>' + (on ? "✓ " + (f ? fechaCorta(f) : "Hoy") : esc(x.p)) + '</em></div>';
@@ -1201,6 +1209,10 @@
     var s = $("#splash");
     if (nuevo || !s) { if (s && s.parentNode) s.parentNode.removeChild(s); if (!SPLASH_HTML) return; document.body.insertAdjacentHTML("beforeend", SPLASH_HTML); s = $("#splash"); }
     if (!s) return;
+    var spv = s.querySelector("svg.sp");
+    if (spv && window.MGM && MGM.ok() && !spv.querySelector(".sp-dr")) {          // el dragón se sienta sobre la columna más alta
+      try { var dd = document.createElement("div"); dd.innerHTML = MGM.svg(); var ds = dd.firstChild; ds.setAttribute("class", "sp-dr md-svg"); ds.setAttribute("x", "118"); ds.setAttribute("y", "40"); ds.setAttribute("width", "84"); ds.setAttribute("height", "68"); spv.appendChild(ds); } catch (e) {}
+    }
     var p = s.querySelector(".sp-sd"), E = S.estado; if (p) p.textContent = saludo() + (E && E.nombre ? ", " + E.nombre : "") + " " + saludoIco();
     function salir() { clearTimeout(S.tsp); s.classList.add("out"); setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s); }, 650); }
     s.addEventListener("click", salir);                                         // un toque y pasa de largo
@@ -1281,6 +1293,7 @@
     ocultarInicio: function () { PREF.ocultarAlAbrir = !PREF.ocultarAlAbrir; guardarPref(); render(); },
     tema: function (v) { PREF.tema = v; guardarPref(); aplicarTema(); render(); },
     color: function (v) { PREF.color = v; guardarPref(); aplicarColor(); render(); },
+    mascota: function (v) { PREF.mascota = v; guardarPref(); mascotaPantalla(); render(); },
     enviarCola: function () { enviarCola(true); },
     colaDescartar: function (v) { store(COLA_K, cola().filter(function (x) { return x.id !== v; })); render(); },
     hojaLock: function () {
@@ -1435,6 +1448,7 @@
   if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) navigator.serviceWorker.register("sw.js").catch(function () {});
   var vis = Date.now(), oculta = 0;
   document.addEventListener("visibilitychange", function () {
+    if (window.MGM) MGM.visibilidad(!document.hidden);
     if (document.hidden) { vozParar(); qrParar(); oculta = Date.now(); vis = Date.now(); S.ver.ahorro = false; S.ver.deuda = false; return; }
     if (PREF.lock && cfg && !cfg.demo && !S.locked && oculta && Date.now() - oculta >= PREF.lock.min * 60000) { S.locked = true; S.bioT = false; S.lockIn = ""; S.lockMsg = ""; render(); }
     if (cfg && oculta && Date.now() - oculta >= 10000) inicioNuevo();      // el iPhone deja la app donde quedó: al volver, empieza en Inicio
@@ -1451,6 +1465,8 @@
   bioDetectar();
   S.anim = true;
   render();
+  if (window.MGM) MGM.init({ pref: function () { return PREF; }, guardar: guardarPref, color: colorActual, mix: hexMix, toast: toast, etapa: dragonEtapa, logros: logrosGanados,
+    estado: function () { var h = $("#sheet"); return { tab: S.tab, locked: !!S.locked, cfg: !!cfg, hoja: !!(h && !h.hidden) }; } });
   if (cfg && !S.locked) { cargarEstado(true); enviarCola(false); }
   splashMostrar(false);
   if (/^#demo/.test(location.hash)) {

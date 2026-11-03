@@ -339,3 +339,40 @@ a.btn{text-decoration:none}
 .cs i{display:block;width:100%;height:36px;border-radius:12px;border:1px solid var(--line)}
 .cs.on i{outline:2px solid var(--navy);outline-offset:2px}.cs.on{color:var(--navy);font-weight:600}
 .cpk{display:flex;align-items:center;gap:10px;font-size:14px}.cpk input{width:46px;height:36px;border:0;padding:0;background:none;cursor:pointer}
+
+/* mascota: el dragón (capa que no recibe toques) */
+#mascota{position:fixed;inset:0;z-index:30;pointer-events:none;overflow:hidden}
+#mascota[hidden]{display:none}
+.md{position:absolute;width:84px;height:68px;left:0;bottom:0;transition:opacity .3s}
+.md-box,.md-box svg{width:100%;height:100%;display:block;pointer-events:none}
+.md-svg{overflow:visible}
+.md-svg g{transform-box:view-box}
+.md.flip .md-box{transform:scaleX(-1)}
+.md-hit{position:absolute;left:18px;top:8px;width:48px;height:56px;border-radius:50%;pointer-events:none}
+.md.hang .md-box{transform:rotate(180deg);transform-origin:50% 50%;animation:mdSwing 1.3s ease-in-out infinite}
+.md.hang.flip .md-box{transform:rotate(180deg) scaleX(-1)}
+@keyframes mdSwing{0%,100%{transform:rotate(172deg)}50%{transform:rotate(190deg)}}
+.md.sleep .md-ey{transform:scaleY(.12)!important;animation:none!important}
+.md-bub{position:absolute;left:46px;top:-24px;font-size:19px;opacity:0;pointer-events:none;white-space:nowrap}
+.md-bub.on{animation:mdBub 1.5s ease-out forwards}
+@keyframes mdBub{0%{opacity:0;transform:translateY(8px) scale(.6)}15%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0;transform:translateY(-8px)}}
+.md-mc{position:absolute;right:6px;top:22px;width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,#fff,#A9A9B1);color:#3A3A40;font:800 6px Arial;display:grid;place-items:center}
+.md-bd{animation:mdBob 2s ease-in-out infinite}.md.walk .md-bd{animation:mdStep .3s ease-in-out infinite}
+@keyframes mdBob{50%{transform:translateY(-1.5px)}}@keyframes mdStep{50%{transform:translateY(-4px)}}
+.md-wf{animation:mdFlap 1.6s ease-in-out infinite}.md.walk .md-wf,.md.wave .md-wf,.md.dance .md-wf{animation-duration:.4s}
+.md-wf.md-r{--d:-14deg}.md-wf.md-l{--d:14deg}
+@keyframes mdFlap{50%{transform:rotate(var(--d))}}
+.md-tw{animation:mdWag 1.8s ease-in-out infinite}@keyframes mdWag{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(9deg)}}
+.md-ey{animation:mdBlink 4.5s infinite}@keyframes mdBlink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+.md.hop{animation:mdHop .5s ease-out}@keyframes mdHop{40%{transform:translateY(-26px)}}
+.md-sp{position:absolute;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle,#fff,var(--a1,#22D3EE));pointer-events:none;animation:mdSpk .7s ease-out forwards}
+@keyframes mdSpk{to{transform:translate(var(--x),var(--y)) scale(.2);opacity:0}}
+.md-coin{position:absolute;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#fff,#A9A9B1);color:#3A3A40;font:800 9px Arial;display:grid;place-items:center;pointer-events:none;transition:bottom .8s cubic-bezier(.5,0,.9,.6)}
+.md-fx{position:absolute;pointer-events:none;font-size:18px;transition:all .9s ease-out}
+.md-bf{transition:left 1s ease-in-out,bottom 1s ease-in-out}
+.md-big{font-size:30px;transition:none}
+.md-burn{animation:mdBurn 1.2s ease-in forwards}@keyframes mdBurn{60%{filter:brightness(.4)}100%{transform:scale(.2) translateY(-10px);opacity:0}}
+.md-card{display:flex;align-items:center;gap:14px}.md-card>svg{flex:none}
+#splash svg.sp .sp-dr *{transform-box:view-box}
+#splash .sp-dr{opacity:0;animation:spDr .45s 1.5s var(--ease) forwards}
+@keyframes spDr{0%{opacity:0;transform:translateY(10px) scale(.5)}70%{opacity:1;transform:translateY(0) scale(1.08)}100%{opacity:1;transform:none}}

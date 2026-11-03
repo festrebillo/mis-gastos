@@ -103,3 +103,6 @@ Nueva pantalla de carga animada (moneda → columnas → línea de crecimiento) 
 
 ## Colores · v1.10.0
 Más → Ajustes → **Colores**: elige una de 15 combinaciones (o «Original» para el negro y gris de antes) o arma la tuya con **Personalizar**. Cambia los botones, las barras de progreso, la barra inferior, la pantalla de carga y la línea del encabezado. Se guarda en tu teléfono.
+
+## Tu dragón · v1.11.0
+Un dragón pasea y hace travesuras mientras la app está abierta (nunca tapa ni bloquea tus toques; en «Registrar» se esconde mientras escribes). Nace como huevito y evoluciona con tus logros: **Joven** con 3 y **Dragón de ahorro** con 7. Tócalo y te regala un corazón. Sus colores siguen la combinación que elijas en Ajustes → Colores. En Ajustes → **Mascota** puedes dejarlo Activo, Tranquilo o Apagado. También aparece en la pantalla de carga y en Logros.
