@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.8.3";
+  var VERSION = "1.9.0";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -53,6 +53,7 @@
     lock: '<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
     edit: '<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
     trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+    medal: '<svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="6"/><path d="M8.6 14 7 21l5-3 5 3-1.6-7"/></svg>',
     cog: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2l.4 2.7h4l.4-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>'
   };
 
@@ -149,11 +150,11 @@
     document.documentElement.setAttribute("data-s", "main");
     var h = "", m = "";
     var E = S.estado;
-    if (S.tab === "inicio") { h = header(E ? E.mes + " " + E.anio : "Mis Gastos", "Hola, <b>" + esc(E ? E.nombre : "") + '</b>', accionesHdr()); m = vistaInicio(); }
+    if (S.tab === "inicio") { h = header(fechaHoyLarga(), saludo() + ", <b>" + esc(E ? E.nombre : "") + '</b> ' + saludoIco(), accionesHdr()); m = vistaInicio(); }
     else if (S.tab === "registrar") { h = header("Nuevo registro", "Registrar"); m = vistaRegistrar(); }
     else if (S.tab === "gastos") { h = header("Historial", "Gastos", accionesHdr()); m = vistaGastos(); }
     else if (S.tab === "tarjeta") { h = header("Tarjeta de crédito", "Tarjeta y ahorro", accionesHdr()); m = vistaTarjeta(); }
-    else { var tt2 = { presupuesto: "Presupuesto", fijos: "Gastos fijos", informes: "Informes", ajustes: "Ajustes" }[S.sub] || "Más"; h = header(S.sub ? "Más" : "Menú", tt2); m = vistaMas(); }
+    else { var tt2 = { presupuesto: "Presupuesto", fijos: "Gastos fijos", informes: "Informes", logros: "Logros", ajustes: "Ajustes" }[S.sub] || "Más"; h = header(S.sub ? "Más" : "Menú", tt2); m = vistaMas(); }
     var main = $("#main"), vk = S.tab + "/" + (S.sub || ""), sc = S.vk === vk ? main.scrollTop : 0;
     $("#hdr").innerHTML = h; main.innerHTML = m; main.scrollTop = sc; S.vk = vk;
     marcarTabs();
@@ -194,7 +195,7 @@
   function vistaInicio() {
     var E = S.estado;
     if (!E) return skel(3);
-    var h = bannerCola() + (S.offline ? '<div class="hint" style="text-align:center">📴 Sin conexión · mostrando tus últimos datos guardados</div>' : ""), pill;
+    var h = fraseHtml() + bannerCola() + (S.offline ? '<div class="hint" style="text-align:center">📴 Sin conexión · mostrando tus últimos datos guardados</div>' : ""), pill;
     if (E.banco === null) pill = '<span class="pill w">Escribe el saldo de tu banco en «Tarjeta» para comprobar</span>';
     else if (Math.abs(E.diferencia) < 0.005) pill = '<span class="pill">✔ Cuadra con tu banco</span>';
     else pill = '<span class="pill w">⚠ Difiere ' + mk(Math.abs(E.diferencia), 'ahorro') + ' con tu banco</span>';
@@ -210,7 +211,7 @@
     h += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="lbl">Gastado este mes</span></div>' +
       '<div class="med">' + money(E.gastos) + '</div><div class="bar' + (E.gastos > E.ingresos ? ' b' : '') + '"><i ' + wi(pc) + '></i></div>' +
       '<div class="hint" style="margin-top:6px">💵 Saldo ' + money(E.gastosSaldo) + ' · 💳 Tarjeta ' + money(E.gastosTarjeta) + '</div></div>';
-    h += metaCard(E) + ritmoCard() + retoCard();
+    h += metaCard(E) + ritmoCard() + retoCard() + atajosInicio();
     if (E.fijosPendientes > 0) h += '<button class="alert" data-a="ir" data-v="fijos"><span>⚠️</span><span style="flex:1;text-align:left">Fijos pendientes: <b>' + money(E.fijosPendientesMonto) + '</b> (' + E.fijosPendientes + ')</span><span class="chev">›</span></button>';
     var conTope = E.presupuesto.filter(function (p) { return p.tope && !p.referencia; }).sort(function (a, b) { return (b.pct || 0) - (a.pct || 0); }).slice(0, 4);
     if (conTope.length) {
@@ -506,9 +507,10 @@
     if (S.sub === "presupuesto") return sub('<div class="sec"><span>Gastado este mes / tope</span></div><div class="card" style="padding:4px 15px">' + (S.estado ? S.estado.presupuesto.map(function (p) { return filaPres(p, true); }).join('<div style="border-top:1px solid var(--line)"></div>') : "") + '</div><p class="hint">Toca una categoría para fijar o cambiar su tope mensual. Los cambios se guardan en la hoja Presupuesto de tu Excel.</p>');
     if (S.sub === "fijos") return sub(vistaFijos());
     if (S.sub === "informes") return sub(vistaInformes());
+    if (S.sub === "logros") return sub(vistaLogros());
     if (S.sub === "ajustes") return sub(vistaAjustes());
     function it(id, ico, t, d) { return '<button class="it" data-a="ir" data-v="' + id + '"><span class="ico">' + I[ico] + '</span><span class="t"><b>' + t + '</b><small>' + d + '</small></span><span class="chev">›</span></button>'; }
-    return '<div class="card menu" style="padding:4px 15px">' + it("presupuesto", "bud", "Presupuesto", "Topes por categoría y avance del mes") + it("fijos", "fix", "Gastos fijos", "Qué falta pagar este mes") + it("informes", "rep", "Informes", "Categorías, meses y los gastos más grandes") + it("ajustes", "cog", "Ajustes", "PIN, conexión e instalación") + '</div>';
+    return '<div class="card menu" style="padding:4px 15px">' + it("presupuesto", "bud", "Presupuesto", "Topes por categoría y avance del mes") + it("fijos", "fix", "Gastos fijos", "Qué falta pagar este mes") + it("informes", "rep", "Informes y gráficas", "Línea del mes, calor, lugares y categorías") + it("logros", "medal", "Logros", "Medallas por tu constancia") + it("ajustes", "cog", "Ajustes", "PIN, conexión e instalación") + '</div>';
   }
   function sub(c) { return '<button class="back" data-a="ir" data-v="">‹ Volver</button>' + c; }
   function vistaFijos() {
@@ -556,6 +558,7 @@
       var tot = D.categorias.reduce(function (s, c) { return s + c.monto; }, 0) || 1;
       h += donutCard(D) + comparaCard(D);
     }
+    h += reportesHtml();
     var mx = Math.max.apply(null, D.meses.map(function (m) { return Math.max(m.ingresos, m.gastos); }).concat([1]));
     h += '<div class="sec"><span>El año · ingresos y gastos</span></div><div class="card"><div class="mini" style="height:130px;gap:6px">' + D.meses.map(function (m) {
       return '<div style="font-size:10px"><span style="display:flex;gap:2px;align-items:flex-end;justify-content:center;height:100px"><i style="width:9px;margin:0;height:' + Math.max(2, Math.round(m.ingresos / mx * 98)) + 'px;background:var(--steel2)"></i><i style="width:9px;margin:0;height:' + Math.max(2, Math.round(m.gastos / mx * 98)) + 'px;background:var(--navy)"></i></span>' + m.mes.slice(0, 1) + '</div>';
@@ -672,12 +675,16 @@
   function cargarEstado(silencioso) {
     if (!cfg) return;
     if (!silencioso && !S.estado) render();
-    app("estado").then(function (j) { if (!S.estado) S.anim = true; S.estado = j; S.offline = false; store("mg_estado", j); if (S.tab !== "registrar" || !silencioso) render(); if (PREF.reto) cargarReto(); })
+    app("estado").then(function (j) { if (!S.estado) S.anim = true; S.estado = j; S.offline = false; store("mg_estado", j); if (S.tab !== "registrar" || !silencioso) render(); if (PREF.reto) cargarReto(); evaluarLogros(); cargarRP(); })
       .catch(function (e) { if (esRed(e)) { S.offline = true; if (S.tab === "inicio") render(); } else fail(e); });
   }
   function refrescarTodo() { S.G.data = null; cargarEstado(true); if (S.tab === "gastos") { render(); cargarGastos(); } }
   function cargarFijos() { app("fijos").then(function (j) { if (!S.FJ.data) S.anim = true; S.FJ.data = j; S.FJ.sel = {}; if (S.sub === "fijos" || (S.tab === "registrar" && S.F.modo === "fijos")) render(); }).catch(fail); }
-  function cargarInformes() { S.IN.data = null; app("informes", { mes: S.IN.mes }).then(function (j) { S.anim = true; S.IN.data = j; if (S.sub === "informes") render(); }).catch(fail); }
+  function cargarInformes() {
+    S.IN.data = null; S.IN.rep = null; S.IN.repErr = "";
+    var rep = app("reportes", { mes: S.IN.mes }).then(function (j) { return j; }, function (e) { S.IN.repErr = msgRep(e); return null; });
+    Promise.all([app("informes", { mes: S.IN.mes }), rep]).then(function (r) { S.anim = true; S.IN.data = r[0]; S.IN.rep = r[1]; S.IN.dia = null; S.IN.catI = 0; if (S.sub === "informes") render(); }).catch(fail);
+  }
 
   /* ---------- ritmo del mes, ¿puedo gastarlo?, metas y retos ---------- */
   function hoyE() { var E = S.estado, d = E && E.hoy ? parseF(E.hoy) : null; return d || new Date(); }
@@ -981,6 +988,186 @@
   }
   function desbloquear() { S.locked = false; S.lockIn = ""; S.lockFallos = 0; S.lockMsg = ""; S.bioT = false; render(); enviarCola(false); cargarEstado(true); }
 
+  /* ---------- saludo, frase de ánimo, gráficas del mes y logros ---------- */
+  var DIAS_L = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  function esNoche() { var h = new Date().getHours(); return h < 5 || h >= 19; }
+  function saludo() { return esNoche() ? "Buenas noches" : new Date().getHours() < 12 ? "Buenos días" : "Buenas tardes"; }
+  function saludoIco() { return esNoche() ? "🌙" : new Date().getHours() < 12 ? "☀️" : "🌤️"; }
+  function fechaHoyLarga() { var d = new Date(); return DIAS_L[d.getDay()] + " " + d.getDate() + " de " + MESES[d.getMonth()].toLowerCase(); }
+  var FRASES = ["Cada sol que registras es un sol que controlas.", "Gastar con calma también es ahorrar.", "Lo pequeño suma: hoy cuenta.", "Tu yo del futuro te lo va a agradecer.", "Ahorrar no es privarte, es elegir.",
+    "Un día a la vez, un registro a la vez.", "La constancia le gana a la perfección.", "Vas construyendo algo grande, poco a poco.", "Registrar es ver; ver es decidir mejor.", "Con calma y constancia llegas lejos.", "Hoy es buen día para ir un paso adelante."];
+  function frase() {
+    var E = S.estado; if (!E) return "";
+    var m = E.metaAhorro, rp = S.RP, dia = hoyE().getDate(), r = ritmo();
+    if (m && m.objetivo > 0 && m.logrado >= m.objetivo) return "🎉 ¡Ya cumpliste tu meta de ahorro de este mes! Sigue así.";
+    if (rp && rp.racha >= 7) return "🔥 " + rp.racha + " días seguidos registrando. ¡Qué constancia!";
+    if ((E.presupuesto || []).some(function (p) { return p.tope && !p.referencia && p.pct >= 100; })) return "💪 Un tope se pasó, no pasa nada: lo importante es retomar el rumbo.";
+    if (r && dia >= 8 && r.proyNeto >= Math.max(0, r.obj)) return "👏 Vas a buen ritmo: así cerrarías el mes cumpliendo lo que planeaste.";
+    if (dia <= 3) return "🌱 Mes nuevo, hoja en blanco. ¡Tú puedes!";
+    var hoy = new Date(), n = Math.floor((hoy - new Date(hoy.getFullYear(), 0, 0)) / 864e5);
+    return "💬 " + FRASES[n % FRASES.length];
+  }
+  function fraseHtml() { var f = frase(); return f ? '<p class="frase">' + esc(f) + '</p>' : ""; }
+
+  /* datos de las gráficas (op «reportes» del script v3.6.0) */
+  function cargarRP(forzar) {
+    if (!cfg) return;
+    if (!forzar && S.RP && Date.now() - (S.RPt || 0) < 300000) return;
+    S.RPt = Date.now();
+    app("reportes", { mes: mesClave(new Date()) }).then(function (j) {
+      S.RP = j;
+      if (j.racha != null && j.racha > (PREF.rachaMax || 0)) { PREF.rachaMax = j.racha; guardarPref(); }
+      evaluarLogros(); if (S.tab === "inicio" || S.sub === "logros") render();
+    }).catch(function () { S.RPt = 0; });
+  }
+  function msgRep(e) { return /desconocida/i.test((e && e.message) || "") ? "Para ver estas gráficas, actualiza el script de Google a la v3.6.0 (está en la carpeta del proyecto)." : "No se pudieron cargar las gráficas. Inténtalo de nuevo."; }
+
+  /* línea del mes día por día: acumulado, mes anterior y proyección */
+  function lineaMes(Rp) {
+    var n = Rp.diasEnMes, dia = Math.max(1, Math.min(Rp.diaActual, n)), W = 320, H = 150, L = 6, Rr = 10, T = 14, B = 24, i, c = 0, a = 0, cur = [], ant = [];
+    for (i = 0; i < n; i++) { c += Rp.dias[i] || 0; cur.push(c); a += (Rp.diasAnt || [])[i] || 0; ant.push(a); }
+    var totAnt = (Rp.diasAnt || []).reduce(function (s, x) { return s + x; }, 0), hoyV = cur[dia - 1], proy = dia < n ? hoyV / dia * n : hoyV;
+    var ymax = Math.max(hoyV, ant[n - 1], proy, 1);
+    function X(k) { return L + (W - L - Rr) * (n > 1 ? k / (n - 1) : 0); }
+    function Y(v) { return T + (H - T - B) * (1 - v / ymax); }
+    function pth(arr, d0, d1) { var s = ""; for (var k = d0; k <= d1; k++) s += (k === d0 ? "M" : "L") + X(k).toFixed(1) + " " + Y(arr[k]).toFixed(1) + " "; return s; }
+    var dCur = pth(cur, 0, dia - 1), base = H - B;
+    var area = dCur + "L" + X(dia - 1).toFixed(1) + " " + base + " L" + X(0).toFixed(1) + " " + base + " Z";
+    var grid = [0, 0.5, 1].map(function (f) { var y = (T + (H - T - B) * f).toFixed(1); return '<line x1="' + L + '" x2="' + (W - Rr) + '" y1="' + y + '" y2="' + y + '" stroke="var(--line)" stroke-width="1"/>'; }).join("");
+    var xl = [1, Math.round(n / 2), n].map(function (d) { return '<text x="' + X(d - 1).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="' + (d === 1 ? "start" : d === n ? "end" : "middle") + '" font-size="10" fill="var(--mut)">' + d + '</text>'; }).join("");
+    var yl = S.ocultoTodo ? "" : '<text x="' + (L + 2) + '" y="' + (T - 4) + '" font-size="10" fill="var(--mut)">S/ ' + Math.round(ymax).toLocaleString("en-US") + '</text>';
+    var pr = dia < n ? '<path d="M' + X(dia - 1).toFixed(1) + ' ' + Y(hoyV).toFixed(1) + ' L' + X(n - 1).toFixed(1) + ' ' + Y(proy).toFixed(1) + '" fill="none" stroke="var(--steel2)" stroke-width="2" stroke-dasharray="2 5" stroke-linecap="round"/>' : "";
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="lnsvg" role="img" aria-label="Gasto acumulado del mes">' + grid + yl + xl +
+      '<path d="' + pth(ant, 0, n - 1) + '" fill="none" stroke="var(--field)" stroke-width="2" stroke-dasharray="3 4" stroke-linecap="round" stroke-linejoin="round"/>' + pr +
+      '<path class="ar" d="' + area + '" fill="var(--navy)" fill-opacity=".08"/>' +
+      '<path class="ln1" pathLength="1" d="' + dCur + '" fill="none" stroke="var(--navy)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" ' + (S.anim ? 'style="stroke-dasharray:0 1" data-da="1 1"' : 'stroke-dasharray="1 1"') + '/>' +
+      '<circle class="dot2" cx="' + X(dia - 1).toFixed(1) + '" cy="' + Y(hoyV).toFixed(1) + '" r="4.5" fill="var(--navy)" stroke="var(--card)" stroke-width="2"/></svg>';
+    var dif = hoyV - ant[dia - 1], mejor = dif <= 0;
+    return svg + '<div class="lgd"><span><i></i>Este mes</span><span><i class="d1"></i>' + esc(Rp.mesAnteriorNombre) + '</span>' + (dia < n ? '<span><i class="d2"></i>Proyección</span>' : "") + '</div>' +
+      '<div style="margin-top:8px"><div class="kv"><span>Llevas gastado</span><b>' + money(hoyV) + '</b></div>' +
+      (ant[dia - 1] > 0 ? '<div class="kv"><span>' + esc(Rp.mesAnteriorNombre) + ' a esta fecha</span><b>' + money(ant[dia - 1]) + '</b></div><div class="kv"><span>Diferencia</span><b style="color:' + (mejor ? "var(--ok)" : "var(--bad)") + '">' + (mejor ? "▼ " : "▲ ") + money(Math.abs(dif)) + '</b></div>' : "") +
+      (dia < n ? '<div class="kv"><span>A este ritmo cerrarías en</span><b>' + money(proy) + '</b></div>' : "") +
+      (totAnt > 0 ? '<div class="kv"><span>' + esc(Rp.mesAnteriorNombre) + ' cerró en</span><b>' + money(totAnt) + '</b></div>' : "") + '</div>';
+  }
+
+  /* mapa de calor: un calendario donde cada día es más oscuro cuanto más gastaste */
+  function calTexto(Rp, d) {
+    var p = Rp.mes.split("-"), f = new Date(+p[0], +p[1] - 1, d), v = Rp.dias[d - 1] || 0;
+    return DIAS_L[f.getDay()] + " " + d + " · " + (d > Rp.diaActual ? "aún no llega" : v > 0 ? money(v) : "sin gastos");
+  }
+  function calor(Rp) {
+    var n = Rp.diasEnMes, dia = Math.min(Rp.diaActual, n), p = Rp.mes.split("-"), off = (new Date(+p[0], +p[1] - 1, 1).getDay() + 6) % 7, d, v;
+    var mx = Math.max.apply(null, Rp.dias.slice(0, dia).concat([1])), suma = [0, 0, 0, 0, 0, 0, 0], cnt = [0, 0, 0, 0, 0, 0, 0];
+    var h = '<div class="hmh">' + ["L", "M", "M", "J", "V", "S", "D"].map(function (x) { return "<span>" + x + "</span>"; }).join("") + '</div><div class="hmg">';
+    for (d = 0; d < off; d++) h += "<i></i>";
+    for (d = 1; d <= n; d++) {
+      v = Rp.dias[d - 1] || 0;
+      var lv = d > dia ? "f" : v <= 0 ? 0 : Math.min(4, Math.max(1, Math.ceil(v / mx * 4)));
+      if (d <= dia) { suma[(off + d - 1) % 7] += v; cnt[(off + d - 1) % 7]++; }
+      h += '<button class="hc l' + lv + (S.IN.dia === d ? " sel" : "") + '" data-a="calDia" data-v="' + d + '" aria-label="' + esc(calTexto(Rp, d)) + '">' + d + '</button>';
+    }
+    h += '</div><div class="hrd" id="cal-read" aria-live="polite">' + (S.IN.dia ? esc(calTexto(Rp, S.IN.dia)) : "Toca un día para ver cuánto gastaste.") + '</div>' +
+      '<div class="hsc">menos <i style="background:var(--track)"></i><i style="background:var(--h1)"></i><i style="background:var(--h2)"></i><i style="background:var(--h3)"></i><i style="background:var(--h4)"></i> más</div>';
+    var best = -1, bv = 0, nombres = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábados", "domingos"];
+    for (d = 0; d < 7; d++) if (cnt[d] > 0 && suma[d] / cnt[d] > bv) { bv = suma[d] / cnt[d]; best = d; }
+    if (best >= 0 && dia >= 7) h += '<p class="hint" style="margin-top:8px">📅 Gastas más los <b>' + nombres[best] + '</b>: en promedio ' + money(bv) + ' cada uno.</p>';
+    return h;
+  }
+
+  /* lugares donde más gastas */
+  function topLugares(Rp) {
+    var Ls = (Rp.lugares || []).slice(0, 6); if (!Ls.length) return "";
+    var mx = Ls[0].monto || 1;
+    return '<div class="sec"><span>Dónde más gastas</span></div><div class="card" style="padding:6px 16px 10px">' + Ls.map(function (x, i) {
+      return '<div class="tl"><div class="rowh"><span class="tln"><i>' + (i + 1) + '</i>' + esc(x.lugar) + '</span><b>' + money(x.monto) + '</b></div><div class="bar g"><i ' + wi(x.monto / mx * 100) + '></i></div><div class="hint">' + x.veces + (x.veces === 1 ? " vez" : " veces") + ' este mes</div></div>';
+    }).join("") + '</div>';
+  }
+
+  /* evolución de una categoría en los últimos 6 meses */
+  function evoCat(Rp) {
+    var C = Rp.categorias || []; if (!C.length) return "";
+    var i0 = Math.min(S.IN.catI || 0, C.length - 1), c = C[i0], W = 320, H = 140, L = 16, Rr = 16, T = 24, B = 24, n = c.serie.length;
+    var mx = Math.max.apply(null, c.serie.concat([1]));
+    var pts = c.serie.map(function (v, k) { return [L + (W - L - Rr) * k / (n - 1), T + (H - T - B) * (1 - v / mx)]; });
+    var d = pts.map(function (p, k) { return (k ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" "), base = H - B;
+    var area = d + " L" + pts[n - 1][0].toFixed(1) + " " + base + " L" + pts[0][0].toFixed(1) + " " + base + " Z";
+    var marks = pts.map(function (p, k) {
+      return '<text x="' + p[0].toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle" font-size="10" fill="var(--mut)">' + esc(Rp.meses[k]) + '</text>' +
+        (S.ocultoTodo ? "" : '<text x="' + p[0].toFixed(1) + '" y="' + (p[1] - 8).toFixed(1) + '" text-anchor="middle" font-size="9.5" font-weight="600" fill="var(--ink)">' + Math.round(c.serie[k]).toLocaleString("en-US") + '</text>') +
+        '<circle class="dot2" cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="' + (k === n - 1 ? 4.5 : 3) + '" fill="var(--navy)" stroke="var(--card)" stroke-width="2"/>';
+    }).join("");
+    var prom = c.serie.slice(0, n - 1).reduce(function (s, x) { return s + x; }, 0) / Math.max(1, n - 1), last = c.serie[n - 1], pc = prom > 0 ? Math.round((last - prom) / prom * 100) : null;
+    return '<div class="sec"><span>Evolución por categoría</span></div><div class="card"><div class="filt" style="margin-bottom:10px">' +
+      C.map(function (x, k) { return '<button class="chip' + (k === i0 ? " sel" : "") + '" data-a="evoCat" data-v="' + k + '">' + x.emoji + " " + esc(x.categoria) + '</button>'; }).join("") + '</div>' +
+      '<svg viewBox="0 0 ' + W + ' ' + H + '" class="lnsvg" role="img" aria-label="Evolución de ' + esc(c.categoria) + '"><line x1="' + L + '" x2="' + (W - Rr) + '" y1="' + base + '" y2="' + base + '" stroke="var(--line)"/>' +
+      '<path class="ar" d="' + area + '" fill="var(--navy)" fill-opacity=".08"/><path class="ln1" pathLength="1" d="' + d + '" fill="none" stroke="var(--navy)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" ' + (S.anim ? 'style="stroke-dasharray:0 1" data-da="1 1"' : 'stroke-dasharray="1 1"') + '/>' + marks + '</svg>' +
+      '<div class="hint" style="margin-top:6px">' + (pc === null ? "Sin gastos en los meses anteriores para comparar." : "Este mes vas " + (pc > 0 ? "<b>" + pc + " % por encima</b>" : pc < 0 ? "<b>" + (-pc) + " % por debajo</b>" : "<b>igual</b>") + " de tu promedio de los 5 meses anteriores (" + money(prom) + ").") + '</div></div>';
+  }
+  function reportesHtml() {
+    var Rp = S.IN.rep;
+    if (!Rp) return S.IN.repErr ? '<div class="card"><p class="hint">' + esc(S.IN.repErr) + '</p></div>' : "";
+    return '<div class="sec"><span>El mes, día por día</span></div><div class="card">' + lineaMes(Rp) + '</div>' +
+      '<div class="sec"><span>Mapa de calor del mes</span></div><div class="card">' + calor(Rp) + '</div>' + topLugares(Rp) + evoCat(Rp);
+  }
+
+  /* logros */
+  function logrosDef() {
+    var E = S.estado || {}, rp = S.RP, m = E.metaAhorro, dia = hoyE().getDate(), cur = 0, ant = 0, i;
+    var topes = (E.presupuesto || []).filter(function (p) { return p.tope && !p.referencia; });
+    if (rp) { var dd = Math.min(rp.diaActual, rp.diasEnMes); for (i = 0; i < dd; i++) { cur += rp.dias[i] || 0; ant += (rp.diasAnt || [])[i] || 0; } }
+    var rm = Math.max(PREF.rachaMax || 0, (rp && rp.racha) || 0), pasados = topes.filter(function (p) { return p.pct >= 100; }).length;
+    return [
+      { id: "racha7", e: "🔥", t: "Racha de 7 días", d: "Registra gastos 7 días seguidos.", ok: rm >= 7, p: Math.min(rm, 7) + " de 7 días" },
+      { id: "racha30", e: "🌋", t: "Racha de 30 días", d: "Registra gastos 30 días seguidos.", ok: rm >= 30, p: Math.min(rm, 30) + " de 30 días" },
+      { id: "meta", e: "🎯", t: "Meta cumplida", d: "Cumple tu meta de ahorro de un mes.", ok: !!(m && m.objetivo > 0 && m.logrado >= m.objetivo), p: m && m.objetivo > 0 ? Math.max(0, Math.min(100, Math.round(m.logrado / m.objetivo * 100))) + " % este mes" : "Define tu meta" },
+      { id: "topes", e: "🛡️", t: "Dentro de tus topes", d: "Llega al día 25 sin pasarte de ningún tope.", ok: topes.length > 0 && dia >= 25 && pasados === 0, p: !topes.length ? "Fija un tope en Presupuesto" : pasados ? "Un tope ya se pasó" : "Vas bien, hasta el día 25" },
+      { id: "menos", e: "📉", t: "Mejor que el mes pasado", d: "Pasado el día 10, gasta menos que el mes anterior a la misma fecha.", ok: !!rp && dia >= 10 && ant > 0 && cur < ant, p: rp && ant > 0 ? (cur < ant ? "Vas por debajo" : "Todavía no") : "Aún sin datos" },
+      { id: "reto", e: "🏅", t: "Reto cumplido", d: "Completa un reto de ahorro.", ok: (PREF.retosOk || 0) >= 1, p: "Crea uno en Inicio" },
+      { id: "mitad", e: "⛰️", t: "A mitad de camino", d: "Llega al 50 % de alguna de tus metas.", ok: (E.metas || []).some(function (x) { return x.avance >= 50; }), p: "Sigue ahorrando" },
+      { id: "qr", e: "🧾", t: "Lector de boletas", d: "Escanea el QR de una boleta o factura.", ok: Object.keys(PREF.rucs || {}).length >= 1, p: "Prueba «Escanear QR»" },
+      { id: "plantilla", e: "⭐", t: "Atajo propio", d: "Guarda tu primera plantilla.", ok: (PREF.plantillas || []).length >= 1, p: "Guárdala en Registrar" },
+      { id: "candado", e: "🔐", t: "App protegida", d: "Activa el candado con código o Face ID.", ok: !!(PREF.lock || PREF.bio), p: "En Ajustes" }
+    ];
+  }
+  function evaluarLogros() {
+    var L = logrosDef(), prim = !PREF.logros, nuevos = [];
+    PREF.logros = PREF.logros || {};
+    L.forEach(function (x) { if (x.ok && !PREF.logros[x.id]) { PREF.logros[x.id] = ymd(new Date()); nuevos.push(x); } });
+    if (!nuevos.length) { if (prim) guardarPref(); return; }
+    guardarPref();
+    if (!prim) { toast("🏅 Nuevo logro: " + nuevos[0].t + (nuevos.length > 1 ? " (+" + (nuevos.length - 1) + " más)" : ""), "ok", 4800); celebrar(); }
+  }
+  function logroOn(x) { return x.ok || !!(PREF.logros && PREF.logros[x.id]); }
+  function atajosInicio() {
+    var L = logrosDef(), n = L.filter(logroOn).length;
+    return '<div class="filt"><button class="chip" data-a="ir" data-v="informes">📈 Mis gráficas</button><button class="chip" data-a="ir" data-v="logros">🏅 Logros ' + n + '/' + L.length + '</button></div>';
+  }
+  function vistaLogros() {
+    var L = logrosDef(), n = L.filter(logroOn).length, rp = S.RP;
+    var h = '<div class="cc"><div class="lbl">Tus logros</div><div class="big">' + n + ' <sm>de ' + L.length + '</sm></div>' +
+      (rp && rp.racha != null ? '<div class="kv" style="margin-top:8px"><span>🔥 Racha actual</span><b>' + rp.racha + (rp.racha === 1 ? " día" : " días") + '</b></div>' : "") + '</div><div class="lgg">';
+    L.forEach(function (x) {
+      var f = PREF.logros && PREF.logros[x.id], on = logroOn(x);
+      h += '<div class="logro' + (on ? " on" : "") + '"><span class="le">' + x.e + '</span><b>' + esc(x.t) + '</b><small>' + esc(x.d) + '</small><em>' + (on ? "✓ " + (f ? fechaCorta(f) : "Hoy") : esc(x.p)) + '</em></div>';
+    });
+    return h + '</div>';
+  }
+
+  /* al volver a la app (iPhone la deja en la pantalla donde quedó): empieza de nuevo en Inicio con la bienvenida */
+  var SPLASH_HTML = $("#splash") ? $("#splash").outerHTML : "";
+  function splashMostrar(nuevo, ms) {
+    var s = $("#splash");
+    if (nuevo || !s) { if (s && s.parentNode) s.parentNode.removeChild(s); if (!SPLASH_HTML) return; document.body.insertAdjacentHTML("beforeend", SPLASH_HTML); s = $("#splash"); }
+    if (!s) return;
+    var p = s.querySelector("p"), E = S.estado; if (p) p.textContent = saludo() + (E && E.nombre ? ", " + E.nombre : "") + " " + saludoIco();
+    clearTimeout(S.tsp);
+    S.tsp = setTimeout(function () { s.classList.add("out"); setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s); }, 650); }, reducido() ? 250 : (ms || 1250));
+  }
+  function inicioNuevo() {
+    S.tab = PREF.abrirRegistrar ? "registrar" : "inicio"; S.sub = null; S.vk = null; S.anim = true; cerrarHoja();
+    if (!S.locked) splashMostrar(true, 1050);
+  }
+
   /* ---------- acciones ---------- */
   var acciones = {
     tab: function (v) { if (S.tab !== v || S.sub) S.anim = true; S.tab = v; S.sub = null; if (v === "gastos" && !S.G.data) S.G.animar = true; render(); if (v === "gastos" && !S.G.data) cargarGastos(); if (v === "gastos" || v === "tarjeta" || v === "inicio") cargarEstado(true); if (v === "registrar") { var l = $("#f-lugar"); if (l && S.F.modo === "gasto") pintarSugerencias(!S.F.lugar.trim()); var m0 = $("#f-monto"); if (m0) m0.focus(); } },
@@ -989,6 +1176,7 @@
       S.anim = true;
       if (v === "fijos") { S.tab = "mas"; S.sub = "fijos"; render(); cargarFijos(); }
       else if (v === "informes") { S.tab = "mas"; S.sub = "informes"; render(); cargarInformes(); }
+      else if (v === "logros") { S.tab = "mas"; S.sub = "logros"; render(); cargarEstado(true); cargarRP(true); }
       else if (v === "presupuesto" || v === "ajustes") { S.tab = "mas"; S.sub = v; render(); if (v === "presupuesto") cargarEstado(true); }
       else { S.tab = "mas"; S.sub = null; render(); }
     },
@@ -1033,6 +1221,11 @@
       if (!items.length) return;
       call({ tipo: "fijos", items: items }).then(function (j) { if (j.status === "error") throw new Error(j.mensaje); toast(j.mensaje, "ok", 4200); cargarFijos(); cargarEstado(true); S.G.data = null; }).catch(fail);
     },
+    calDia: function (v) {
+      S.IN.dia = +v; var r = $("#cal-read"); if (r && S.IN.rep) r.textContent = calTexto(S.IN.rep, S.IN.dia);
+      Array.prototype.forEach.call(document.querySelectorAll(".hc"), function (b) { b.classList.toggle("sel", b.getAttribute("data-v") === String(v)); });
+    },
+    evoCat: function (v) { S.IN.catI = +v; render(); },
     mesI: function (v) { S.IN.mes = mesMover(S.IN.mes, +v); render(); cargarInformes(); },
     cambiarPin: function () { cfg = { url: cfg.url, pin: "" }; store("mg_cfg", null); S.setupMsg = "Escribe el PIN nuevo."; render(); },
     salir: function () { cfg = null; S.estado = null; S.G.data = null; store("mg_cfg", null); store("mg_estado", null); S.setupMsg = ""; S.tab = "inicio"; S.sub = null; render(); },
@@ -1199,6 +1392,7 @@
   document.addEventListener("visibilitychange", function () {
     if (document.hidden) { vozParar(); qrParar(); oculta = Date.now(); vis = Date.now(); S.ver.ahorro = false; S.ver.deuda = false; return; }
     if (PREF.lock && cfg && !cfg.demo && !S.locked && oculta && Date.now() - oculta >= PREF.lock.min * 60000) { S.locked = true; S.bioT = false; S.lockIn = ""; S.lockMsg = ""; render(); }
+    if (cfg && oculta && Date.now() - oculta >= 10000) inicioNuevo();      // el iPhone deja la app donde quedó: al volver, empieza en Inicio
     if (cfg && !S.locked) { render(); enviarCola(false); if (Date.now() - vis > 60000) { vis = Date.now(); cargarEstado(true); if (S.tab === "gastos") cargarGastos(); } }
   });
   window.addEventListener("online", function () { enviarCola(false); cargarEstado(true); });
@@ -1208,10 +1402,7 @@
   S.anim = true;
   render();
   if (cfg && !S.locked) { cargarEstado(true); enviarCola(false); }
-  (function () {
-    var s = $("#splash"); if (!s) return;
-    setTimeout(function () { s.classList.add("out"); setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s); }, 650); }, reducido() ? 250 : 1250);
-  })();
+  splashMostrar(false);
   if (/^#demo/.test(location.hash)) {
     cfg = { demo: true }; S.locked = false; S.anim = true;
     var mt = /tab=(\w+)/.exec(location.hash), ms = /sub=(\w+)/.exec(location.hash);

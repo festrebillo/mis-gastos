@@ -38,6 +38,19 @@
     return ok({ mes: a + "-" + pad(m + 1), mesNombre: "", total: tot, totalSaldo: ts, totalTarjeta: tt, cantidad: lista.length, gastos: lista,
       ingresos: (q || b.categoria || b.metodo) ? [] : [{ fila: 12, fecha: fh(d1, 7, 0), descripcion: "Primera Quincena", monto: 1420 }], totalIngresos: 1420 });
   }
+  function reportes(b) {
+    var p = /^(\d{4})-(\d{2})$/.exec(b.mes || ""), a = p ? +p[1] : hoy.getFullYear(), m = p ? +p[2] - 1 : hoy.getMonth(), esAct = a === hoy.getFullYear() && m === hoy.getMonth();
+    var n = new Date(a, m + 1, 0).getDate(), dia = esAct ? hoy.getDate() : n, np = new Date(a, m, 0).getDate(), dias = [], ant = [], i;
+    for (i = 1; i <= n; i++) dias.push(i > dia || (i * 37 + m * 11) % 5 === 0 ? 0 : Math.round(((i * 53 + m * 7) % 90 + 8) * 10) / 10);
+    for (i = 1; i <= np; i++) ant.push((i * 29 + 3) % 4 === 0 ? 0 : Math.round(((i * 47) % 110 + 10) * 10) / 10);
+    var ab = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Set", "Oct", "Nov", "Dic"], nom = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Setiembre", "Octubre", "Noviembre", "Diciembre"];
+    var meses = [], k; for (k = 0; k < 6; k++) meses.push(ab[new Date(a, m - 5 + k, 1).getMonth()]);
+    var cats = [["Restaurantes / Antojos", "🍔", [310, 420, 380, 410, 395, 160]], ["Supermercado", "🛒", [540, 610, 580, 620, 600, 260]], ["Transporte", "🚕", [150, 180, 170, 190, 175, 90]], ["Suscripciones", "📺", [45, 45, 45, 45, 45, 45]], ["Salud y Farmacia", "💊", [0, 60, 0, 120, 40, 33]]]
+      .map(function (c) { return { categoria: c[0], emoji: c[1], serie: c[2], total: c[2].reduce(function (s, x) { return s + x; }, 0) }; });
+    return ok({ mes: a + "-" + pad(m + 1), mesNombre: nom[m], mesAnteriorNombre: nom[(m + 11) % 12], diasEnMes: n, diaActual: dia, dias: dias, diasAnt: ant,
+      lugares: [{ lugar: "Metro", monto: 187.4, veces: 3 }, { lugar: "Uber", monto: 146.5, veces: 5 }, { lugar: "Adobada", monto: 90, veces: 3 }, { lugar: "Starbucks", monto: 56.7, veces: 3 }, { lugar: "Inkafarma", monto: 32.6, veces: 1 }],
+      meses: meses, categorias: cats, racha: esAct ? 9 : null });
+  }
   window.MG_DEMO = function (b) {
     if (b.tipo === "lugares") {
       var base = ["Starbucks", "Bembos", "Metro", "Uber", "Adobada", "Adobada Express", "Tambo", "Inkafarma", "Wong", "Plaza Vea"], q = (b.q || "").toLowerCase();
@@ -55,6 +68,7 @@
       case "estado": return estado();
       case "gastos": return gastosOp(b);
       case "fijos": return ok({ fijos: [{ nombre: "🚗 Pasajes", monto: 120, pagado: false }, { nombre: "🏠 Cuota Casa", monto: 180, pagado: false }, { nombre: "📱 Celular", monto: 45.9, pagado: false }, { nombre: "🎶 Spotify", monto: 19.9, pagado: false }, { nombre: "📺 Netflix", monto: 44.9, pagado: true }, { nombre: "IPAD", monto: 141.58, pagado: true }], pendientes: 4, montoPendiente: 365.8 });
+      case "reportes": return reportes(b);
       case "informes": return ok({ mes: "Noviembre", mesAnteriorNombre: "Octubre", anio: 2026, ingresos: 1420, gastos: 260.3, mesAnteriorGastos: 3310.6, promedioDiario: 13, categorias: [{ categoria: "Restaurantes / Antojos", emoji: "🍔", monto: 48.9, mesAnterior: 410 }, { categoria: "Supermercado", emoji: "🛒", monto: 87.4, mesAnterior: 620 }, { categoria: "Transporte", emoji: "🚕", monto: 46.5, mesAnterior: 190 }, { categoria: "Suscripciones", emoji: "📺", monto: 44.9, mesAnterior: 44.9 }, { categoria: "Salud y Farmacia", emoji: "💊", monto: 32.6, mesAnterior: 0 }],
         top5: [{ lugar: "Metro", monto: 87.4, categoria: "Supermercado", fecha: "2026-11-01", metodo: "Saldo Disponible" }, { lugar: "Uber", monto: 46.5, categoria: "Transporte", fecha: "2026-11-01", metodo: "Tarjeta de Crédito" }, { lugar: "Netflix", monto: 44.9, categoria: "Suscripciones", fecha: "2026-11-01", metodo: "Tarjeta de Crédito" }],
         meses: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Set", "Oct", "Nov", "Dic"].map(function (m, i) { return { mes: m, ingresos: i === 8 ? 3055 : i === 9 ? 3338 : i === 10 ? 1420 : 0, gastos: i === 8 ? 1134 : i === 9 ? 3310 : i === 10 ? 260 : 0 }; }), necesidades: 12, gustos: 6, ahorro: 82 });

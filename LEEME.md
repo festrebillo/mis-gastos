@@ -91,3 +91,9 @@ Nueva paleta negro/blanco/gris con degradado, modo claro y oscuro (automático p
 
 ## Escanear QR · v1.8.0
 En Registrar, «📷 Escanear QR» lee el código QR de la boleta o factura electrónica y llena el monto, el detalle y la fecha. La primera vez de cada comercio eliges el lugar; la app lo recuerda por su RUC y la siguiente vez lo llena sola. No se guarda ninguna foto.
+
+## Novedades · v1.9.0 (necesita el script v3.6.0 para las gráficas)
+- Saludo según la hora y una frase de ánimo en Inicio.
+- Al volver a la app después de unos segundos, empieza en Inicio con la bienvenida y las animaciones.
+- Más → «Informes y gráficas»: línea del mes día por día (con proyección), mapa de calor del mes, lugares donde más gastas y evolución de una categoría.
+- Más → «Logros»: medallas por tu constancia (racha de días registrando, meta cumplida, dentro de topes…).
