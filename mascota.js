@@ -39,7 +39,6 @@
     for (var i = 0; i < S.sp; i++) { var sx = cx + (i - (S.sp - 1) / 2) * 7.5, y0 = hy - S.hv + 1; g += '<path d="M' + f(sx - 3.5) + " " + y0 + "L" + f(sx) + " " + f(y0 - 6 - (S.sp > 3 ? 2 : 0)) + "L" + f(sx + 3.5) + " " + y0 + 'Z" fill="' + P.spike + '"/>'; }
     g += '<ellipse cx="' + cx + '" cy="' + hy + '" rx="' + S.hr + '" ry="' + S.hv + '" fill="url(#' + id + ')"/><ellipse cx="' + cx + '" cy="59" rx="14" ry="10" fill="' + P.belly + '"/><ellipse cx="55" cy="57" rx="1.8" ry="2.4" fill="' + P.b2 + '"/><ellipse cx="65" cy="57" rx="1.8" ry="2.4" fill="' + P.b2 + '"/>';
     g += '<path d="M53 63Q60 69 67 63" stroke="#16161A" stroke-width="2" fill="none" stroke-linecap="round"/>' + (st === 3 ? '<path d="M55.5 64.6l1.6 3 1.6-2.2M64.5 64.6l-1.6 3-1.6-2.2" fill="#fff" stroke="#fff" stroke-width=".6"/>' : "");
-    g += '<circle cx="36" cy="56" r="5" fill="' + P.cheek + '" opacity=".5"/><circle cx="84" cy="56" r="5" fill="' + P.cheek + '" opacity=".5"/>';
     g += '<g class="md-ey" style="transform-origin:60px 45px"><ellipse cx="47" cy="45" rx="7" ry="8.5" fill="#16161A"/><ellipse cx="73" cy="45" rx="7" ry="8.5" fill="#16161A"/><circle cx="49.2" cy="42" r="2.7" fill="#fff"/><circle cx="75.2" cy="42" r="2.7" fill="#fff"/><circle cx="45" cy="48" r="1.2" fill="#fff"/><circle cx="71" cy="48" r="1.2" fill="#fff"/></g>';
     if (st === 1) g += '<path d="M37 38L42 30L48 36L54 28L60 36L66 28L72 36L78 30L83 38Q60 20 37 38Z" fill="#F4F4F6" stroke="#CFCFD6" stroke-width="1.2" stroke-linejoin="round"/>';
     if (st === 3) g += '<path d="M60 27L65.5 34L60 41L54.5 34Z" fill="' + P.a2 + '" stroke="#fff" stroke-width=".9"/><path d="M57.8 32L60 29.6" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/>';
@@ -143,11 +142,16 @@
       [0, 1, 2, 3].forEach(function (i) { p = p.then(function () { md.classList.add("hop"); fx(i % 2 ? "🎶" : "🎵", g.X0 + x + (i % 2 ? 6 : 64), parseFloat(md.style.bottom) + 54, i % 2 ? -14 : 14, -44); return w(520); }).then(function () { md.classList.remove("hop"); return w(80); }); });
       return p.then(function () { md.classList.remove("dance"); });
     },
-    mariposa: function () {
-      var g = geo(), b = tmp(document.createElement("span")); b.className = "md-fx md-bf"; b.textContent = "🦋"; b.style.left = (g.X0 + g.W - 60) + "px"; b.style.bottom = (g.floor + 120) + "px";
+    pelota: function () {
+      var g = geo(), b = tmp(document.createElement("span")), bx = rnd(60, g.W - 70);
+      b.className += " md-fx md-bf"; b.textContent = "⚽"; b.style.left = (g.X0 + bx) + "px"; b.style.bottom = (g.floor + 4) + "px";
       var p = Promise.resolve();
-      [0, 1, 2].forEach(function () { p = p.then(function () { var bx = rnd(30, g.W - 60); b.style.left = (g.X0 + bx) + "px"; b.style.bottom = (g.floor + rnd(60, 190)) + "px"; return walk(Math.max(0, Math.min(g.W - DW, bx - 40))); }).then(function () { return w(250); }); });
-      return p.then(function () { md.classList.add("hop"); bubble("😤"); b.style.bottom = innerHeight + "px"; return w(600); }).then(function () { md.classList.remove("hop"); });
+      [0, 1, 2].forEach(function () {
+        p = p.then(function () { return walk(Math.max(0, Math.min(g.W - DW, bx - (x < bx ? 52 : -6)))); })
+          .then(function () { md.classList.add("hop"); bx = rnd(40, g.W - 50); b.style.transition = "left .9s ease-out, bottom .45s ease-out"; b.style.bottom = (g.floor + 70) + "px"; b.style.left = (g.X0 + bx) + "px"; return w(450); })
+          .then(function () { b.style.bottom = (g.floor + 4) + "px"; return w(500); }).then(function () { md.classList.remove("hop"); });
+      });
+      return p.then(function () { bubble("😎"); return w(500); });
     },
     quemar: function () {
       var g = geo(), px = Math.max(110, g.W - 70), e = tmp(document.createElement("span")); e.className = "md-fx md-big"; e.textContent = "🧾"; e.style.left = (g.X0 + px) + "px"; e.style.bottom = (g.floor + 4) + "px";
@@ -210,6 +214,7 @@
   function reaccionar(tipo) {
     if (!activo || !puedeActuar()) return;
     if (tipo === "logro" && !ocupado) { ejecutar("bailar"); return; }
+    if (tipo === "ahorro" && !ocupado) { md.classList.add("hop"); bubble("💪"); sparks(8); setTimeout(function () { md.classList.remove("hop"); }, 560); return; }
     if (tipo === "gasto" && !ocupado) { md.classList.add("hop"); bubble("🪙"); sparks(6); setTimeout(function () { md.classList.remove("hop"); }, 560); }
   }
   function visibilidad(v) { if (!activo) return; if (!v) { interrumpir(); alSuelo(); } }
@@ -223,7 +228,7 @@
     md = document.createElement("div"); md.className = "md"; md.id = "md";
     svgBox = document.createElement("div"); svgBox.className = "md-box"; bub = document.createElement("span"); bub.className = "md-bub"; hit = document.createElement("i"); hit.className = "md-hit";
     md.appendChild(svgBox); md.appendChild(bub); md.appendChild(hit); root.appendChild(md); document.body.appendChild(root);
-    hit.addEventListener("click", function () { if (ocupado) return; md.classList.add("hop"); bubble("💖"); var g = geo(); fx("💖", g.X0 + x + 34, parseFloat(md.style.bottom) + 60, 0, -40); setTimeout(function () { md.classList.remove("hop"); }, 540); });
+    hit.addEventListener("click", function () { if (ocupado) return; var em = ["💪", "😎", "🔥", "🤙"][Math.floor(Math.random() * 4)], g = geo(); md.classList.add("hop"); bubble(em); fx(em, g.X0 + x + 34, parseFloat(md.style.bottom) + 60, 0, -40); sparks(5); setTimeout(function () { md.classList.remove("hop"); }, 540); });
     document.addEventListener("scroll", function () { if (ocupado && (NECESITA[ultima] || ultima === "travesura")) { interrumpir(); alSuelo(); } }, true);
     window.addEventListener("resize", function () { if (activo) { interrumpir(); reposo(); } });
     document.addEventListener("focusin", pantalla); document.addEventListener("focusout", function () { setTimeout(pantalla, 120); });

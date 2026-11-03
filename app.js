@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.11.0";
+  var VERSION = "1.12.0";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -648,6 +648,9 @@
     h += '<div class="card"><div class="lbl">Mascota</div><div class="seg" style="margin-top:8px">' +
       [["activa", "Activa"], ["tranquila", "Tranquila"], ["apagada", "Apagada"]].map(function (o) { return '<button class="' + ((PREF.mascota || "activa") === o[0] ? "on" : "") + '" data-a="mascota" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
       '</div><p class="hint" style="margin-top:6px">Tu dragón pasea y hace travesuras mientras la app está abierta, sin tapar nada ni bloquear tus toques. «Tranquila»: solo duerme y escupe chispas en su sitio. En «Registrar» se esconde mientras escribes. Evoluciona con tus logros.</p></div>';
+    h += '<div class="card"><div class="lbl">Emoticones</div><div class="seg" style="margin-top:8px">' +
+      [["ms", "Microsoft"], ["sys", "Del teléfono"]].map(function (o) { return '<button class="' + ((PREF.emoji || "ms") === o[0] ? "on" : "") + '" data-a="emoji" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
+      '</div><p class="hint" style="margin-top:6px">Los emoticones de Microsoft se ven igual en todos los teléfonos. «Del teléfono» usa los de Apple.</p></div>';
     h += '<div class="card"><div class="lbl">Inicio rápido</div><button class="cb' + (PREF.abrirRegistrar ? " on" : "") + '" data-a="abrirRegistrar" style="margin-top:4px"><span class="box">' + (PREF.abrirRegistrar ? "✓" : "") + '</span><span style="flex:1">Abrir la app directamente en «Registrar» con el teclado de números</span></button></div>';
     h += '<div class="card"><div class="lbl">Barra inferior</div><div class="seg" style="margin-top:8px">' +
       [[false, "Pegada abajo"], [true, "Flotante"]].map(function (o) { return '<button class="' + ((PREF.flotante === true) === o[0] ? "on" : "") + '" data-a="barra" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
@@ -1042,11 +1045,22 @@
   function fechaHoyLarga() { var d = new Date(); return DIAS_L[d.getDay()] + " " + d.getDate() + " de " + MESES[d.getMonth()].toLowerCase(); }
   var FRASES = ["Cada sol que registras es un sol que controlas.", "Gastar con calma también es ahorrar.", "Lo pequeño suma: hoy cuenta.", "Tu yo del futuro te lo va a agradecer.", "Ahorrar no es privarte, es elegir.",
     "Un día a la vez, un registro a la vez.", "La constancia le gana a la perfección.", "Vas construyendo algo grande, poco a poco.", "Registrar es ver; ver es decidir mejor.", "Con calma y constancia llegas lejos.", "Hoy es buen día para ir un paso adelante."];
+  /* días de ahorro: un día SIN gastar es bueno (cuentan los gastos variables, sin fijos ni pago de la tarjeta) */
+  function ahorroDatos() {
+    var rp = S.RP; if (!rp) return null;
+    var v = rp.diasVar || rp.dias || [], va = rp.diasVarAnt || rp.diasAnt || [], dia = Math.min(rp.diaActual, rp.diasEnMes), sin = 0, i;
+    for (i = 0; i < dia; i++) if ((v[i] || 0) <= 0) sin++;
+    var racha = rp.rachaAhorro;
+    if (racha == null) { var sv = va.concat(v.slice(0, dia)), iz = sv.length - 1; racha = 0; while (iz >= 0 && sv[iz] <= 0) { racha++; iz--; } }
+    return { racha: racha, dias: rp.diasSinGasto != null ? rp.diasSinGasto : sin, hoy: rp.hoySinGasto != null ? rp.hoySinGasto : ((v[dia - 1] || 0) <= 0) };
+  }
   function frase() {
     var E = S.estado; if (!E) return "";
     var m = E.metaAhorro, rp = S.RP, dia = hoyE().getDate(), r = ritmo();
     if (m && m.objetivo > 0 && m.logrado >= m.objetivo) return "🎉 ¡Ya cumpliste tu meta de ahorro de este mes! Sigue así.";
-    if (rp && rp.racha >= 7) return "🔥 " + rp.racha + " días seguidos registrando. ¡Qué constancia!";
+    var ah = ahorroDatos();
+    if (ah && ah.racha >= 2) return "💰 " + ah.racha + " días seguidos sin gastar. ¡Así se ahorra!";
+    if (ah && ah.hoy && dia >= 2) return "💪 Hoy no has gastado nada: ¡día de ahorro!";
     if ((E.presupuesto || []).some(function (p) { return p.tope && !p.referencia && p.pct >= 100; })) return "💪 Un tope se pasó, no pasa nada: lo importante es retomar el rumbo.";
     if (r && dia >= 8 && r.proyNeto >= Math.max(0, r.obj)) return "👏 Vas a buen ritmo: así cerrarías el mes cumpliendo lo que planeaste.";
     if (dia <= 3) return "🌱 Mes nuevo, hoja en blanco. ¡Tú puedes!";
@@ -1062,7 +1076,9 @@
     S.RPt = Date.now();
     app("reportes", { mes: mesClave(new Date()) }).then(function (j) {
       S.RP = j;
-      if (j.racha != null && j.racha > (PREF.rachaMax || 0)) { PREF.rachaMax = j.racha; guardarPref(); }
+      var ah = ahorroDatos();
+      if (ah && ah.racha > (PREF.ahorroMax || 0)) { PREF.ahorroMax = ah.racha; guardarPref(); }
+      if (ah && ah.hoy && PREF.ahorroHoy !== ymd(new Date())) { PREF.ahorroHoy = ymd(new Date()); guardarPref(); if (window.MGM) MGM.reaccionar("ahorro"); }
       evaluarLogros(); if (S.tab === "inicio" || S.sub === "logros") render();
     }).catch(function () { S.RPt = 0; });
   }
@@ -1099,16 +1115,17 @@
   /* mapa de calor: un calendario donde cada día es más oscuro cuanto más gastaste */
   function calTexto(Rp, d) {
     var p = Rp.mes.split("-"), f = new Date(+p[0], +p[1] - 1, d), v = Rp.dias[d - 1] || 0;
-    return DIAS_L[f.getDay()] + " " + d + " · " + (d > Rp.diaActual ? "aún no llega" : v > 0 ? money(v) : "sin gastos");
+    return DIAS_L[f.getDay()] + " " + d + " · " + (d > Rp.diaActual ? "aún no llega" : ((Rp.diasVar || Rp.dias)[d - 1] || 0) <= 0 ? "💰 día sin gastar" + (v > 0 ? " (solo fijos: " + money(v) + ")" : "") : money(v));
   }
   function calor(Rp) {
     var n = Rp.diasEnMes, dia = Math.min(Rp.diaActual, n), p = Rp.mes.split("-"), off = (new Date(+p[0], +p[1] - 1, 1).getDay() + 6) % 7, d, v;
-    var mx = Math.max.apply(null, Rp.dias.slice(0, dia).concat([1])), suma = [0, 0, 0, 0, 0, 0, 0], cnt = [0, 0, 0, 0, 0, 0, 0];
+    var libres = 0, mx = Math.max.apply(null, Rp.dias.slice(0, dia).concat([1])), suma = [0, 0, 0, 0, 0, 0, 0], cnt = [0, 0, 0, 0, 0, 0, 0];
     var h = '<div class="hmh">' + ["L", "M", "M", "J", "V", "S", "D"].map(function (x) { return "<span>" + x + "</span>"; }).join("") + '</div><div class="hmg">';
     for (d = 0; d < off; d++) h += "<i></i>";
     for (d = 1; d <= n; d++) {
       v = Rp.dias[d - 1] || 0;
       var lv = d > dia ? "f" : v <= 0 ? 0 : Math.min(4, Math.max(1, Math.ceil(v / mx * 4)));
+      if (d <= dia && ((Rp.diasVar || Rp.dias)[d - 1] || 0) <= 0) { lv = "z"; libres++; }
       if (d <= dia) { suma[(off + d - 1) % 7] += v; cnt[(off + d - 1) % 7]++; }
       h += '<button class="hc l' + lv + (S.IN.dia === d ? " sel" : "") + '" data-a="calDia" data-v="' + d + '" aria-label="' + esc(calTexto(Rp, d)) + '">' + d + '</button>';
     }
@@ -1116,6 +1133,7 @@
       '<div class="hsc">menos <i style="background:var(--track)"></i><i style="background:var(--h1)"></i><i style="background:var(--h2)"></i><i style="background:var(--h3)"></i><i style="background:var(--h4)"></i> más</div>';
     var best = -1, bv = 0, nombres = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábados", "domingos"];
     for (d = 0; d < 7; d++) if (cnt[d] > 0 && suma[d] / cnt[d] > bv) { bv = suma[d] / cnt[d]; best = d; }
+    h += '<p class="hint" style="margin-top:8px">🌱 Los días con borde de color son días en que <b>no gastaste</b>: cada uno es ahorro. Llevas <b>' + libres + '</b> este mes.</p>';
     if (best >= 0 && dia >= 7) h += '<p class="hint" style="margin-top:8px">📅 Gastas más los <b>' + nombres[best] + '</b>: en promedio ' + money(bv) + ' cada uno.</p>';
     return h;
   }
@@ -1161,10 +1179,12 @@
     var E = S.estado || {}, rp = S.RP, m = E.metaAhorro, dia = hoyE().getDate(), cur = 0, ant = 0, i;
     var topes = (E.presupuesto || []).filter(function (p) { return p.tope && !p.referencia; });
     if (rp) { var dd = Math.min(rp.diaActual, rp.diasEnMes); for (i = 0; i < dd; i++) { cur += rp.dias[i] || 0; ant += (rp.diasAnt || [])[i] || 0; } }
-    var rm = Math.max(PREF.rachaMax || 0, (rp && rp.racha) || 0), pasados = topes.filter(function (p) { return p.pct >= 100; }).length;
+    var ah = ahorroDatos() || { racha: 0, dias: 0 }, rm = Math.max(PREF.ahorroMax || 0, ah.racha), pasados = topes.filter(function (p) { return p.pct >= 100; }).length;
     return [
-      { id: "racha7", e: "🔥", t: "Racha de 7 días", d: "Registra gastos 7 días seguidos.", ok: rm >= 7, p: Math.min(rm, 7) + " de 7 días" },
-      { id: "racha30", e: "🌋", t: "Racha de 30 días", d: "Registra gastos 30 días seguidos.", ok: rm >= 30, p: Math.min(rm, 30) + " de 30 días" },
+      { id: "ahorro1", e: "💰", t: "Día de ahorro", d: "Pasa un día entero sin gastar.", ok: rm >= 1 || ah.dias >= 1, p: "Aún sin un día sin gastos" },
+      { id: "ahorro3", e: "💪", t: "Tres días sin gastar", d: "Pasa 3 días seguidos sin gastar.", ok: rm >= 3, p: Math.min(rm, 3) + " de 3 días" },
+      { id: "ahorro7", e: "🏆", t: "Semana de ahorro", d: "Pasa 7 días seguidos sin gastar.", ok: rm >= 7, p: Math.min(rm, 7) + " de 7 días" },
+      { id: "libres10", e: "🌟", t: "10 días sin gastar", d: "Llega a 10 días sin gastos en un mismo mes.", ok: ah.dias >= 10, p: ah.dias + " de 10 este mes" },
       { id: "meta", e: "🎯", t: "Meta cumplida", d: "Cumple tu meta de ahorro de un mes.", ok: !!(m && m.objetivo > 0 && m.logrado >= m.objetivo), p: m && m.objetivo > 0 ? Math.max(0, Math.min(100, Math.round(m.logrado / m.objetivo * 100))) + " % este mes" : "Define tu meta" },
       { id: "topes", e: "🛡️", t: "Dentro de tus topes", d: "Llega al día 25 sin pasarte de ningún tope.", ok: topes.length > 0 && dia >= 25 && pasados === 0, p: !topes.length ? "Fija un tope en Presupuesto" : pasados ? "Un tope ya se pasó" : "Vas bien, hasta el día 25" },
       { id: "menos", e: "📉", t: "Mejor que el mes pasado", d: "Pasado el día 10, gasta menos que el mes anterior a la misma fecha.", ok: !!rp && dia >= 10 && ant > 0 && cur < ant, p: rp && ant > 0 ? (cur < ant ? "Vas por debajo" : "Todavía no") : "Aún sin datos" },
@@ -1195,7 +1215,7 @@
   function vistaLogros() {
     var L = logrosDef(), n = L.filter(logroOn).length, rp = S.RP;
     var h = '<div class="cc"><div class="lbl">Tus logros</div><div class="big">' + n + ' <sm>de ' + L.length + '</sm></div>' +
-      (rp && rp.racha != null ? '<div class="kv" style="margin-top:8px"><span>🔥 Racha actual</span><b>' + rp.racha + (rp.racha === 1 ? " día" : " días") + '</b></div>' : "") + '</div>' + (window.MGM && MGM.ok() ? MGM.tarjeta() : "") + '<div class="lgg">';
+      (function () { var q = ahorroDatos(); return q ? '<div class="kv" style="margin-top:8px"><span>💰 Sin gastar (seguidos)</span><b>' + q.racha + (q.racha === 1 ? " día" : " días") + '</b></div><div class="kv"><span>🌱 Días sin gastar este mes</span><b>' + q.dias + '</b></div>' : ""; })() + '</div>' + (window.MGM && MGM.ok() ? MGM.tarjeta() : "") + '<div class="lgg">';
     L.forEach(function (x) {
       var f = PREF.logros && PREF.logros[x.id], on = logroOn(x);
       h += '<div class="logro' + (on ? " on" : "") + '"><span class="le">' + x.e + '</span><b>' + esc(x.t) + '</b><small>' + esc(x.d) + '</small><em>' + (on ? "✓ " + (f ? fechaCorta(f) : "Hoy") : esc(x.p)) + '</em></div>';
@@ -1294,6 +1314,7 @@
     tema: function (v) { PREF.tema = v; guardarPref(); aplicarTema(); render(); },
     color: function (v) { PREF.color = v; guardarPref(); aplicarColor(); render(); },
     mascota: function (v) { PREF.mascota = v; guardarPref(); mascotaPantalla(); render(); },
+    emoji: function (v) { PREF.emoji = v; guardarPref(); if (window.MGE) MGE.set(v !== "sys"); render(); },
     enviarCola: function () { enviarCola(true); },
     colaDescartar: function (v) { store(COLA_K, cola().filter(function (x) { return x.id !== v; })); render(); },
     hojaLock: function () {

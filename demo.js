@@ -41,7 +41,7 @@
   function reportes(b) {
     var p = /^(\d{4})-(\d{2})$/.exec(b.mes || ""), a = p ? +p[1] : hoy.getFullYear(), m = p ? +p[2] - 1 : hoy.getMonth(), esAct = a === hoy.getFullYear() && m === hoy.getMonth();
     var n = new Date(a, m + 1, 0).getDate(), dia = esAct ? hoy.getDate() : n, np = new Date(a, m, 0).getDate(), dias = [], ant = [], i;
-    for (i = 1; i <= n; i++) dias.push(i > dia || (i * 37 + m * 11) % 5 === 0 ? 0 : Math.round(((i * 53 + m * 7) % 90 + 8) * 10) / 10);
+    for (i = 1; i <= n; i++) dias.push(i > dia || (i * 37 + m * 11) % 5 === 0 || i % 4 === 2 ? 0 : Math.round(((i * 53 + m * 7) % 90 + 8) * 10) / 10);
     for (i = 1; i <= np; i++) ant.push((i * 29 + 3) % 4 === 0 ? 0 : Math.round(((i * 47) % 110 + 10) * 10) / 10);
     var ab = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Set", "Oct", "Nov", "Dic"], nom = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Setiembre", "Octubre", "Noviembre", "Diciembre"];
     var meses = [], k; for (k = 0; k < 6; k++) meses.push(ab[new Date(a, m - 5 + k, 1).getMonth()]);
@@ -49,7 +49,8 @@
       .map(function (c) { return { categoria: c[0], emoji: c[1], serie: c[2], total: c[2].reduce(function (s, x) { return s + x; }, 0) }; });
     return ok({ mes: a + "-" + pad(m + 1), mesNombre: nom[m], mesAnteriorNombre: nom[(m + 11) % 12], diasEnMes: n, diaActual: dia, dias: dias, diasAnt: ant,
       lugares: [{ lugar: "Metro", monto: 187.4, veces: 3 }, { lugar: "Uber", monto: 146.5, veces: 5 }, { lugar: "Adobada", monto: 90, veces: 3 }, { lugar: "Starbucks", monto: 56.7, veces: 3 }, { lugar: "Inkafarma", monto: 32.6, veces: 1 }],
-      meses: meses, categorias: cats, racha: esAct ? 9 : null });
+      meses: meses, categorias: cats, racha: esAct ? 9 : null, diasVar: dias.slice(), diasVarAnt: ant.slice(), diasSinGasto: dias.slice(0, dia).filter(function (v) { return v <= 0; }).length,
+      rachaAhorro: esAct ? (function () { var sv = ant.concat(dias.slice(0, dia)), k = sv.length - 1, r = 0; while (k >= 0 && sv[k] <= 0) { r++; k--; } return r; })() : null, hoySinGasto: esAct ? dias[dia - 1] <= 0 : null });
   }
   window.MG_DEMO = function (b) {
     if (b.tipo === "lugares") {

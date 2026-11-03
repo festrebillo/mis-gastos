@@ -106,3 +106,8 @@ Más → Ajustes → **Colores**: elige una de 15 combinaciones (o «Original» 
 
 ## Tu dragón · v1.11.0
 Un dragón pasea y hace travesuras mientras la app está abierta (nunca tapa ni bloquea tus toques; en «Registrar» se esconde mientras escribes). Nace como huevito y evoluciona con tus logros: **Joven** con 3 y **Dragón de ahorro** con 7. Tócalo y te regala un corazón. Sus colores siguen la combinación que elijas en Ajustes → Colores. En Ajustes → **Mascota** puedes dejarlo Activo, Tranquilo o Apagado. También aparece en la pantalla de carga y en Logros.
+
+## Ahorro y emoticones · v1.12.0 (días sin gastar: necesita el script v3.7.0)
+- **Un día sin gastar es bueno:** los logros premian los días y rachas sin gastar (ya no el registrar). El mapa de calor marca esos días con borde de color y tu dragón lo celebra.
+- **Emoticones de Microsoft** en toda la app (Ajustes → Emoticones para volver a los del teléfono).
+- Tu dragón ya no tiene mejillas rosadas, y al tocarlo da 💪 😎 🔥 🤙; en vez de la mariposa patea una pelota.
