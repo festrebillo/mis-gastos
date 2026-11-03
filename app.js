@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.8.0";
+  var VERSION = "1.8.1";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -198,7 +198,7 @@
     if (E.banco === null) pill = '<span class="pill w">Escribe el saldo de tu banco en «Tarjeta» para comprobar</span>';
     else if (Math.abs(E.diferencia) < 0.005) pill = '<span class="pill">✔ Cuadra con tu banco</span>';
     else pill = '<span class="pill w">⚠ Difiere ' + mk(Math.abs(E.diferencia), 'ahorro') + ' con tu banco</span>';
-    h += '<div class="card"><div class="rowh"><span class="lbl">Ahorro disponible hoy</span>' + ojoK("ahorro") + '</div><div class="big"' + (visK("ahorro") ? ' data-n="' + E.ahorro + '"' : "") + '>' + bigK(E.ahorro, "ahorro") + '</div>' + pill +
+    h += '<div class="cc"><div class="rowh"><span class="lbl">Ahorro disponible hoy</span>' + ojoK("ahorro", true) + '</div><div class="big"' + (visK("ahorro") ? ' data-n="' + E.ahorro + '"' : "") + '>' + bigK(E.ahorro, "ahorro") + '</div>' + pill +
       (E.reserva > 0 ? '<div class="kv" style="margin-top:8px"><span>🔒 Reservado para fijos</span><b>' + mk(E.reserva, "ahorro") + '</b></div>' : "") + '</div>';
     var t = E.tarjeta;
     if (t) {
@@ -665,7 +665,7 @@
 
   /* ---------- hojas (diálogos) ---------- */
   function abrirHoja(html) { var w = $("#sheet"); w.innerHTML = '<div class="sheet" role="dialog" aria-modal="true">' + html + '</div>'; w.hidden = false; }
-  function cerrarHoja() { qrParar(); var w = $("#sheet"); w.hidden = true; w.innerHTML = ""; }
+  function cerrarHoja() { qrParar(); vozParar(); var w = $("#sheet"); w.hidden = true; w.innerHTML = ""; }
   $("#sheet").addEventListener("click", function (e) { if (e.target === this) cerrarHoja(); });
 
   /* ---------- datos ---------- */
@@ -699,7 +699,7 @@
       '<div class="kv" style="margin-top:8px"><span>Si sigues así, gastarás con Saldo</span><b>' + money(R.proyGastos) + '</b></div>' +
       '<div class="kv"><span>Ahorro estimado al cierre</span><b style="color:' + (buena ? "var(--ok)" : "var(--bad)") + '">' + money(R.proyNeto) + '</b></div>' +
       '<div class="hint" style="margin-top:6px">' + (m ? (buena ? "🎯 Cumplirías tu meta de " + money(R.obj) + ". " : "⚠️ Quedarías " + money(R.obj - R.proyNeto) + " por debajo de tu meta de " + money(R.obj) + ". ") : "") +
-      'Es una estimación con tus ingresos habituales (' + money(R.ingEsp) + '), tus fijos pendientes y lo gastado hasta hoy.</div></div>';
+      'Es una estimación según tus hábitos de este mes y de los anteriores.</div></div>';
   }
   function puedoHtml() {
     var F = S.F, E = S.estado, monto = parseFloat(String(F.monto).replace(",", "."));
@@ -790,13 +790,20 @@
       '<div id="v-prev" class="card hint">Aquí verás cómo lo entendí.</div><button class="btn" data-a="vozUsar">Usar en el formulario</button><button class="btn sec2" data-a="cerrar">Cancelar</button>');
     var t = $("#v-txt"); t.addEventListener("input", pintarVoz); t.focus();
   }
+  var VZ = null, vzT = 0;
+  function vozParar() {
+    clearTimeout(vzT);
+    if (VZ) { var r = VZ; VZ = null; try { r.onresult = r.onerror = r.onend = null; r.abort(); } catch (e) {} }
+    var a = document.activeElement; if (a && a.blur && (a.tagName === "TEXTAREA" || a.tagName === "INPUT")) a.blur();   // al soltar el teclado se apaga también el dictado del iPhone
+  }
   function vozMic() {
     var Rec = window.SpeechRecognition || window.webkitSpeechRecognition; if (!Rec) return;
-    var rc = new Rec(), b = $("#v-mic"); rc.lang = "es-PE"; rc.interimResults = true; rc.continuous = false;
-    rc.onresult = function (ev) { var s = ""; for (var i = 0; i < ev.results.length; i++) s += ev.results[i][0].transcript; var t = $("#v-txt"); if (t) { t.value = s; pintarVoz(); } };
+    vozParar();
+    var rc = new Rec(), b = $("#v-mic"); VZ = rc; rc.lang = "es-PE"; rc.interimResults = true; rc.continuous = false;
+    rc.onresult = function (ev) { var s = "", fin = false; for (var i = 0; i < ev.results.length; i++) { s += ev.results[i][0].transcript; if (ev.results[i].isFinal) fin = true; } var t = $("#v-txt"); if (t) { t.value = s; pintarVoz(); } if (fin) { try { rc.stop(); } catch (e) {} } };
     rc.onerror = function () { if (b) b.textContent = "🎤 Hablar"; toast("El dictado no está disponible aquí. Usa el micrófono del teclado.", "err", 4500); };
-    rc.onend = function () { if (b) b.textContent = "🎤 Hablar"; };
-    try { rc.start(); if (b) b.textContent = "🎙️ Escuchando…"; } catch (e) { toast("No se pudo iniciar el micrófono", "err"); }
+    rc.onend = function () { VZ = null; clearTimeout(vzT); if (b) b.textContent = "🎤 Hablar"; };
+    try { rc.start(); vzT = setTimeout(vozParar, 15000); if (b) b.textContent = "🎙️ Escuchando…"; } catch (e) { toast("No se pudo iniciar el micrófono", "err"); }
   }
 
   /* ---- Escanear el QR de la boleta o factura electrónica (SUNAT): RUC|tipo|serie|número|IGV|total|fecha|… ---- */
@@ -820,7 +827,7 @@
     if (lug) { F.lugar = lug; F.catAuto = true; F.cat = ""; }
     render(); celebrar();
     if (lug) call({ tipo: "sugerir", lugar: lug }).then(function (j) { if (j && j.habitual && S.F.catAuto && !S.F.cat) { S.F.cat = j.habitual; S.F.habitual = j.habitual; if (S.tab === "registrar") render(); } }).catch(function () {});
-    else toast("Leído: " + moneyRaw(q.total) + ". Elige el lugar; la próxima vez este comercio se llena solo.", "ok", 5200);
+    else { toast("Leído: " + moneyRaw(q.total) + ". Elige el lugar; la próxima vez este comercio se llena solo.", "ok", 5200); hojaLugar(); }
   }
   var QRS = null;
   function cargarJsQR(ok, mal) {
@@ -1190,7 +1197,7 @@
   if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) navigator.serviceWorker.register("sw.js").catch(function () {});
   var vis = Date.now(), oculta = 0;
   document.addEventListener("visibilitychange", function () {
-    if (document.hidden) { oculta = Date.now(); vis = Date.now(); S.ver.ahorro = false; S.ver.deuda = false; return; }
+    if (document.hidden) { vozParar(); qrParar(); oculta = Date.now(); vis = Date.now(); S.ver.ahorro = false; S.ver.deuda = false; return; }
     if (PREF.lock && cfg && !cfg.demo && !S.locked && oculta && Date.now() - oculta >= PREF.lock.min * 60000) { S.locked = true; S.bioT = false; S.lockIn = ""; S.lockMsg = ""; render(); }
     if (cfg && !S.locked) { render(); enviarCola(false); if (Date.now() - vis > 60000) { vis = Date.now(); cargarEstado(true); if (S.tab === "gastos") cargarGastos(); } }
   });
