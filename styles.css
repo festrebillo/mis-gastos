@@ -241,7 +241,7 @@ label.l{display:block;font-size:11.5px;color:var(--mut);letter-spacing:.4px;text
 .keys button:active{background:rgba(255,255,255,.28);transform:scale(.94)}
 .lk-forgot{color:#D4D4D8!important}
 /* pantalla de inicio */
-#splash{color:#fff;position:fixed;inset:0;z-index:90;background:linear-gradient(165deg,#000 0%,#111113 55%,#3D3D44 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .5s,transform .5s var(--ease)}
+#splash{color:#fff;position:fixed;inset:0;z-index:90;background:linear-gradient(165deg,#000 0%,#111113 55%,var(--tint,#3D3D44) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .5s,transform .5s var(--ease)}
 #splash.out{opacity:0;transform:scale(1.04);pointer-events:none}
 #splash::before{content:"";position:absolute;width:340px;height:340px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.1),transparent);animation:breathe 2.4s ease-in-out infinite}
 @keyframes breathe{50%{transform:scale(1.15);opacity:.7}}
@@ -256,7 +256,7 @@ label.l{display:block;font-size:11.5px;color:var(--mut);letter-spacing:.4px;text
 #splash .sp-bar{transform-origin:50% 100%;animation:spBar .6s var(--ease) both}
 #splash .sp-ln{stroke-dasharray:300;stroke-dashoffset:300;animation:spLine .5s 1.15s var(--ease) forwards}
 #splash .sp-sa{opacity:0;animation:spStar .35s 1.5s var(--ease) forwards}
-#splash .sp-nm{position:relative;margin-top:2px;color:#9A9AA2;font-size:9.5px;font-weight:700;letter-spacing:3.4px;text-transform:uppercase;opacity:0;animation:rise .5s 1.5s var(--ease) forwards}
+#splash .sp-nm{position:relative;margin-top:2px;color:var(--a1,#9A9AA2);font-size:9.5px;font-weight:700;letter-spacing:3.4px;text-transform:uppercase;opacity:0;animation:rise .5s 1.5s var(--ease) forwards}
 #splash .sp-sd{position:relative;color:#BDBDC4;font-size:14px;min-height:20px;opacity:0;animation:rise .5s 1.65s var(--ease) forwards}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
@@ -327,3 +327,15 @@ a.btn{text-decoration:none}
 .logro small{font-size:12px;color:var(--mut);line-height:1.35}
 .logro em{font-style:normal;font-size:12px;font-weight:700;color:var(--mut);margin-top:4px}.logro.on em{color:var(--ok)}
 @media (prefers-reduced-motion:reduce){.ln1{transition:none}.lnsvg .ar,.lnsvg .dot2{animation:none}}
+
+/* colores de acento (se activan con html[data-c]; «Original» los quita) */
+:root[data-c]{--btng:linear-gradient(135deg,var(--a1),var(--a2));--pon:linear-gradient(135deg,var(--a1),var(--a2));--onbtn:var(--onacc);--pone:var(--onacc);--btn:var(--a1);--sp1:var(--a1);--sp2:var(--a2)}
+:root[data-c] .bar:not(.ok):not(.w):not(.b):not(.g) i{background:linear-gradient(90deg,var(--a1),var(--a2))}
+:root[data-c] .hdr{background:linear-gradient(90deg,var(--a1),var(--a2)) left bottom/100% 2px no-repeat,linear-gradient(180deg,var(--g1) 0%,var(--g2) 42%,var(--g3) 100%)}
+:root[data-c] .cb.on .box{background:var(--a1);border-color:var(--a1);color:var(--onacc)}
+:root[data-c] .tab.plus .c svg{stroke:var(--onacc)}
+.csw{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 8px;margin-top:10px}
+.cs{display:flex;flex-direction:column;align-items:center;gap:5px;padding:0;font-size:11px;color:var(--mut)}
+.cs i{display:block;width:100%;height:36px;border-radius:12px;border:1px solid var(--line)}
+.cs.on i{outline:2px solid var(--navy);outline-offset:2px}.cs.on{color:var(--navy);font-weight:600}
+.cpk{display:flex;align-items:center;gap:10px;font-size:14px}.cpk input{width:46px;height:36px;border:0;padding:0;background:none;cursor:pointer}

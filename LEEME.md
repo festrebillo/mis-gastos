@@ -100,3 +100,6 @@ En Registrar, «📷 Escanear QR» lee el código QR de la boleta o factura elec
 
 ## Pantalla de carga e icono · v1.9.1
 Nueva pantalla de carga animada (moneda → columnas → línea de crecimiento) con el nombre en pequeño y tu saludo; un toque la salta. Nuevo icono: para verlo, quita la app de la pantalla de inicio del iPhone y vuelve a agregarla.
+
+## Colores · v1.10.0
+Más → Ajustes → **Colores**: elige una de 15 combinaciones (o «Original» para el negro y gris de antes) o arma la tuya con **Personalizar**. Cambia los botones, las barras de progreso, la barra inferior, la pantalla de carga y la línea del encabezado. Se guarda en tu teléfono.

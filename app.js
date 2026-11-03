@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.9.2";
+  var VERSION = "1.10.0";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -23,6 +23,43 @@
     document.documentElement.setAttribute("data-t", oscuro ? "dark" : "light");
   }
   function aplicarPantalla() { document.documentElement.classList.toggle("dock", PREF.flotante !== true); }
+  /* ---------- colores de acento (negro de base + combinación de colores a elegir) ---------- */
+  var COLORES = [
+    { id: "neutro", n: "Original" },
+    { id: "aurora", n: "Aurora", a1: "#22D3EE", a2: "#8B5CF6", t: "#10143A" },
+    { id: "fogata", n: "Fogata", a1: "#FFC24A", a2: "#FF6A1F", t: "#1E150E" },
+    { id: "coral", n: "Coral", a1: "#22D3EE", a2: "#FF7A59", t: "#241410" },
+    { id: "oceano", n: "Océano", a1: "#2DD4BF", a2: "#3B82F6", t: "#0A1A33" },
+    { id: "atardecer", n: "Atardecer", a1: "#FB923C", a2: "#F0629F", t: "#22102A" },
+    { id: "neon", n: "Neón", a1: "#22D3EE", a2: "#E879F9", t: "#1A0F2E" },
+    { id: "hielo", n: "Hielo y fuego", a1: "#67E8F9", a2: "#FB7185", t: "#1E1020" },
+    { id: "galaxia", n: "Galaxia", a1: "#22D3EE", a2: "#F472B6", t: "#150F2E" },
+    { id: "selva", n: "Selva", a1: "#34D399", a2: "#06B6D4", t: "#08201C" },
+    { id: "sakura", n: "Sakura", a1: "#F9A8D4", a2: "#A78BFA", t: "#261022" },
+    { id: "lava", n: "Lava", a1: "#FB923C", a2: "#EF4444", t: "#240D0A" },
+    { id: "lima", n: "Lima", a1: "#A3E635", a2: "#22C55E", t: "#0E1E0A" },
+    { id: "medianoche", n: "Medianoche", a1: "#60A5FA", a2: "#6366F1", t: "#070B24" },
+    { id: "cereza", n: "Cereza", a1: "#FB7185", a2: "#F43F5E", t: "#250A12" },
+    { id: "mandarina", n: "Mandarina", a1: "#FBBF24", a2: "#F97316", t: "#231409" }
+  ];
+  function hexRgb(h) { return [1, 3, 5].map(function (i) { return parseInt(h.slice(i, i + 2), 16) || 0; }); }
+  function hexLum(h) { var c = hexRgb(h).map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; }
+  function hexMix(a, b, t) { var x = hexRgb(a), y = hexRgb(b); return "#" + x.map(function (v, i) { return ("0" + Math.round(v + (y[i] - v) * t).toString(16)).slice(-2); }).join(""); }
+  function colorActual() {
+    var id = PREF.color || "aurora";
+    if (id === "custom" && PREF.colorCustom) return { id: "custom", n: "Tu combinación", a1: PREF.colorCustom.a1, a2: PREF.colorCustom.a2, t: hexMix(PREF.colorCustom.a2, "#000000", 0.85) };
+    return COLORES.filter(function (x) { return x.id === id; })[0] || COLORES[1];
+  }
+  function aplicarColor() {
+    var c = colorActual(), r = document.documentElement.style, k = ["--a1", "--a2", "--tint", "--onacc", "--focus"];
+    if (!c.a1) { k.forEach(function (p) { r.removeProperty(p); }); document.documentElement.removeAttribute("data-c"); return; }
+    var rgb = hexRgb(c.a1);
+    r.setProperty("--a1", c.a1); r.setProperty("--a2", c.a2); r.setProperty("--tint", c.t);
+    r.setProperty("--onacc", Math.min(hexLum(c.a1), hexLum(c.a2)) < 0.15 ? "#FFFFFF" : "#05131B");     // texto legible sobre el degradado
+    r.setProperty("--focus", "rgba(" + rgb.join(",") + ",.28)");
+    document.documentElement.setAttribute("data-c", "1");
+  }
+  aplicarColor();
   aplicarTema(); aplicarPantalla();
   if (mq && mq.addEventListener) mq.addEventListener("change", aplicarTema);
   function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} return null; }
@@ -602,6 +639,11 @@
     h += '<div class="card"><div class="lbl">Apariencia</div><div class="seg" style="margin-top:8px">' +
       [["auto", "Automático"], ["claro", "Claro"], ["oscuro", "Oscuro"]].map(function (o) { return '<button class="' + (PREF.tema === o[0] ? "on" : "") + '" data-a="tema" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
       '</div><p class="hint" style="margin-top:6px">«Automático» sigue el modo claro u oscuro de tu iPhone.</p></div>';
+    var cc = colorActual(), pk = cc.a1 ? cc : COLORES[1];
+    h += '<div class="card"><div class="lbl">Colores</div><p class="hint" style="margin-top:4px">El negro sigue de base; elige la combinación de colores de botones, barras y pantalla de carga.</p><div class="csw">' +
+      COLORES.map(function (x) { return '<button class="cs' + (cc.id === x.id ? " on" : "") + '" data-a="color" data-v="' + x.id + '" aria-label="' + esc(x.n) + '"><i style="background:' + (x.a1 ? "linear-gradient(135deg," + x.a1 + "," + x.a2 + ")" : "linear-gradient(135deg,#0B0B0B,#8A8A92)") + '"></i><span>' + esc(x.n) + '</span></button>'; }).join("") +
+      '</div><div class="lbl" style="margin-top:14px">Personalizar</div><div class="row2" style="margin-top:6px"><label class="cpk"><input type="color" id="c-a1" value="' + pk.a1 + '"><span>Color 1</span></label><label class="cpk"><input type="color" id="c-a2" value="' + pk.a2 + '"><span>Color 2</span></label></div>' +
+      (cc.id === "custom" ? '<p class="hint" style="margin-top:6px">Usando tu combinación personalizada.</p>' : "") + '</div>';
     h += '<div class="card"><div class="lbl">Inicio rápido</div><button class="cb' + (PREF.abrirRegistrar ? " on" : "") + '" data-a="abrirRegistrar" style="margin-top:4px"><span class="box">' + (PREF.abrirRegistrar ? "✓" : "") + '</span><span style="flex:1">Abrir la app directamente en «Registrar» con el teclado de números</span></button></div>';
     h += '<div class="card"><div class="lbl">Barra inferior</div><div class="seg" style="margin-top:8px">' +
       [[false, "Pegada abajo"], [true, "Flotante"]].map(function (o) { return '<button class="' + ((PREF.flotante === true) === o[0] ? "on" : "") + '" data-a="barra" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
@@ -1238,6 +1280,7 @@
     ojo: function () { S.ocultoTodo = !S.ocultoTodo; render(); },     // muestra u oculta todos los montos MENOS «Ahorro» y «Deuda»
     ocultarInicio: function () { PREF.ocultarAlAbrir = !PREF.ocultarAlAbrir; guardarPref(); render(); },
     tema: function (v) { PREF.tema = v; guardarPref(); aplicarTema(); render(); },
+    color: function (v) { PREF.color = v; guardarPref(); aplicarColor(); render(); },
     enviarCola: function () { enviarCola(true); },
     colaDescartar: function (v) { store(COLA_K, cola().filter(function (x) { return x.id !== v; })); render(); },
     hojaLock: function () {
@@ -1400,6 +1443,11 @@
   window.addEventListener("online", function () { enviarCola(false); cargarEstado(true); });
   if (cfg && !cfg.demo && PREF.lock) { S.locked = true; S.lockIn = ""; }
   if (PREF.abrirRegistrar) S.tab = "registrar";
+  document.addEventListener("input", function (e) {                  // selector «Personalizar» de Ajustes
+    if (e.target.id !== "c-a1" && e.target.id !== "c-a2") return;
+    PREF.color = "custom"; PREF.colorCustom = { a1: $("#c-a1").value, a2: $("#c-a2").value }; guardarPref(); aplicarColor();
+  });
+  document.addEventListener("change", function (e) { if (e.target.id === "c-a1" || e.target.id === "c-a2") render(); });
   bioDetectar();
   S.anim = true;
   render();
