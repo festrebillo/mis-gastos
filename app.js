@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.8.2";
+  var VERSION = "1.8.3";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -608,8 +608,8 @@
       (PREF.lock && !cfg.demo ?
         '<div class="kv"><span>🔒 Candado activado</span><b>' + PREF.lock.len + ' dígitos</b></div><label class="l" style="margin-top:8px">Pedir el código</label><div class="mset">' +
         [[0, "Siempre"], [1, "Tras 1 min"], [5, "Tras 5 min"]].map(function (o) { return '<button class="' + (PREF.lock.min === o[0] ? "on" : "") + '" data-a="lockMin" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
-        '</div>' + (S.bioOk ? '<button class="cb' + (PREF.bio ? " on" : "") + '" data-a="bioToggle" style="margin-top:6px"><span class="box">' + (PREF.bio ? "✓" : "") + '</span><span style="flex:1">Entrar con Face ID / Touch ID (el código queda como respaldo)</span></button>' : "") + '<div class="row2" style="margin-top:10px"><button class="btn sec2" data-a="hojaLock">Cambiar código</button><button class="btn sec2" data-a="lockOff">Quitar candado</button></div>' :
-        '<button class="btn sec2" style="margin-top:8px" data-a="hojaLock">🔒 Activar candado con código</button><p class="hint" style="margin-top:6px">Un código corto que se pide al abrir la app. Solo vale en este teléfono.</p>') + '</div>';
+        '</div>' + (S.bioOk ? '<button class="cb' + (PREF.bio ? " on" : "") + '" data-a="bioToggle" style="margin-top:6px"><span class="box">' + (PREF.bio ? "✓" : "") + '</span><span style="flex:1">Entrar con Face ID / Touch ID (el código queda como respaldo)</span></button>' : '<p class="hint" style="margin-top:8px">Face ID: ' + (S.bioOk === false || !window.PublicKeyCredential ? "tu iPhone no lo ofrece a las apps web instaladas; se usa el código." : "comprobando…") + '</p>') + '<div class="row2" style="margin-top:10px"><button class="btn sec2" data-a="hojaLock">Cambiar código</button><button class="btn sec2" data-a="lockOff">Quitar candado</button></div>' :
+        '<button class="btn sec2" style="margin-top:8px" data-a="hojaLock">🔒 Activar candado con código</button><p class="hint" style="margin-top:6px">Un código corto que se pide al abrir la app. Solo vale en este teléfono. Con el candado activo verás aquí la opción de Face ID si tu iPhone la permite.</p>') + '</div>';
     if (c.length) {
       h += '<div class="sec"><span>Registros pendientes</span></div><div class="card" style="padding:4px 15px">' + c.map(function (x) {
         return '<div class="it"><span class="ico">' + (x.error ? "⚠️" : "⏳") + '</span><span class="t"><b>' + esc(x.nota || "Registro") + '</b><small>' + (x.error ? esc(x.error) : "Esperando conexión") + '</small></span>' +
