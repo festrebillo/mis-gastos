@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.9.0";
+  var VERSION = "1.9.1";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -1159,13 +1159,14 @@
     var s = $("#splash");
     if (nuevo || !s) { if (s && s.parentNode) s.parentNode.removeChild(s); if (!SPLASH_HTML) return; document.body.insertAdjacentHTML("beforeend", SPLASH_HTML); s = $("#splash"); }
     if (!s) return;
-    var p = s.querySelector("p"), E = S.estado; if (p) p.textContent = saludo() + (E && E.nombre ? ", " + E.nombre : "") + " " + saludoIco();
-    clearTimeout(S.tsp);
-    S.tsp = setTimeout(function () { s.classList.add("out"); setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s); }, 650); }, reducido() ? 250 : (ms || 1250));
+    var p = s.querySelector(".sp-sd"), E = S.estado; if (p) p.textContent = saludo() + (E && E.nombre ? ", " + E.nombre : "") + " " + saludoIco();
+    function salir() { clearTimeout(S.tsp); s.classList.add("out"); setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s); }, 650); }
+    s.addEventListener("click", salir);                                         // un toque y pasa de largo
+    clearTimeout(S.tsp); S.tsp = setTimeout(salir, reducido() ? 250 : (ms || 2400));
   }
   function inicioNuevo() {
     S.tab = PREF.abrirRegistrar ? "registrar" : "inicio"; S.sub = null; S.vk = null; S.anim = true; cerrarHoja();
-    if (!S.locked) splashMostrar(true, 1050);
+    if (!S.locked) splashMostrar(true, 2200);
   }
 
   /* ---------- acciones ---------- */

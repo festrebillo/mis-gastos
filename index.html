@@ -10,8 +10,8 @@
 <meta name="theme-color" content="#050505">
 <meta name="robots" content="noindex,nofollow">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-180.png?v=4">
-<link rel="icon" href="icon-192.png?v=4">
+<link rel="apple-touch-icon" href="icon-180.png?v=5">
+<link rel="icon" href="icon-192.png?v=5">
 <title>Mis Gastos</title>
 <link rel="stylesheet" href="styles.css">
 </head>
@@ -24,9 +24,20 @@
 <div id="busy" aria-hidden="true"><div class="orbit"><i style="--k:0"></i><i style="--k:1"></i><i style="--k:2"></i><i style="--k:3"></i><i style="--k:4"></i><i style="--k:5"></i><i style="--k:6"></i><i style="--k:7"></i></div><p id="busy-t">Cargando…</p></div>
 <div id="okpop" aria-hidden="true"><svg viewBox="0 0 52 52"><path d="M14 27l8 8 16-18"/></svg></div>
 <div id="splash" aria-hidden="true">
-  <div class="lg2"><svg viewBox="0 0 100 70" stroke-width="4"><text x="50" y="50" text-anchor="middle" font-family="-apple-system,Segoe UI,Arial,sans-serif" font-weight="800" font-size="56" fill="#fff" stroke="none" letter-spacing="-2">S/</text><path d="M14 60 Q50 72 88 44" stroke="#D4D4D8" fill="none" stroke-linecap="round"/></svg></div>
-  <h1>Mis <b>Gastos</b></h1>
-  <p>Tu dinero, claro y a la mano</p>
+  <svg class="sp" viewBox="0 40 200 275" aria-hidden="true">
+    <defs><linearGradient id="spg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".6" stop-color="#E2E2E6"/><stop offset="1" stop-color="#A9A9B1"/></linearGradient></defs>
+    <g class="sp-co"><g transform="translate(100 176) scale(2.1)"><circle r="20" fill="url(#spg)"/><circle r="15.6" fill="none" stroke="#8A8A92" stroke-width="1.4" opacity=".7"/><text y="6" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="17" fill="#3A3A40">S/</text></g></g>
+    <rect class="sp-bar" x="30" y="236" width="22" height="64" rx="6" fill="url(#spg)" opacity=".6" style="animation-delay:.85s"/>
+    <rect class="sp-bar" x="60" y="206" width="22" height="94" rx="6" fill="url(#spg)" opacity=".7" style="animation-delay:.91s"/>
+    <rect class="sp-bar" x="90" y="176" width="22" height="124" rx="6" fill="url(#spg)" opacity=".8" style="animation-delay:.97s"/>
+    <rect class="sp-bar" x="120" y="146" width="22" height="154" rx="6" fill="url(#spg)" opacity=".9" style="animation-delay:1.03s"/>
+    <rect class="sp-bar" x="150" y="106" width="22" height="194" rx="6" fill="url(#spg)" style="animation-delay:1.09s"/>
+    <path class="sp-ln" pathLength="300" d="M24 214L71 184L101 196L131 132L168 78" stroke="#fff" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path class="sp-ln" pathLength="300" d="M150 78H168V96" stroke="#fff" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <g class="sp-sa" fill="#fff"><path transform="translate(172 52)" d="M0 -9Q0 0 9 0Q0 0 0 9Q0 0 -9 0Q0 0 0 -9Z"/><path transform="translate(30 150) scale(.7)" d="M0 -9Q0 0 9 0Q0 0 0 9Q0 0 -9 0Q0 0 0 -9Z"/><path transform="translate(120 100) scale(.55)" d="M0 -9Q0 0 9 0Q0 0 0 9Q0 0 -9 0Q0 0 0 -9Z"/></g>
+  </svg>
+  <p class="sp-nm">Mis Gastos</p>
+  <p class="sp-sd"></p>
 </div>
 <script src="demo.js"></script>
 <script src="app.js"></script>

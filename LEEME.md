@@ -97,3 +97,6 @@ En Registrar, «📷 Escanear QR» lee el código QR de la boleta o factura elec
 - Al volver a la app después de unos segundos, empieza en Inicio con la bienvenida y las animaciones.
 - Más → «Informes y gráficas»: línea del mes día por día (con proyección), mapa de calor del mes, lugares donde más gastas y evolución de una categoría.
 - Más → «Logros»: medallas por tu constancia (racha de días registrando, meta cumplida, dentro de topes…).
+
+## Pantalla de carga e icono · v1.9.1
+Nueva pantalla de carga animada (moneda → columnas → línea de crecimiento) con el nombre en pequeño y tu saludo; un toque la salta. Nuevo icono: para verlo, quita la app de la pantalla de inicio del iPhone y vuelve a agregarla.
