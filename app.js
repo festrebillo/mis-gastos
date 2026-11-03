@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.5.1";
+  var VERSION = "1.5.2";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -776,7 +776,7 @@
       Array.prototype.forEach.call(document.querySelectorAll("#m-seg button"), function (b) { b.classList.toggle("on", b.getAttribute("data-v") === v); });
       $("#m-lbl").textContent = v === "pct" ? "Porcentaje (%)" : "Monto al mes (S/)"; $("#m-val").placeholder = v === "pct" ? "Ej.: 20" : "Ej.: 600";
     },
-    metaGuardar: function () { app("meta_ahorro_guardar", { tipo: S.metaTipo, valor: $("#m-val").value.trim().replace(",", ".") }).then(function (j) { cerrarHoja(); toast(j.mensaje, "ok"); cargarEstado(true); }).catch(fail); },
+    metaGuardar: function () { app("meta_ahorro_guardar", { modo: S.metaTipo, valor: $("#m-val").value.trim().replace(",", ".") }).then(function (j) { cerrarHoja(); toast(j.mensaje, "ok"); cargarEstado(true); }).catch(fail); },
     metaQuitar: function () { app("meta_ahorro_guardar", { valor: 0 }).then(function (j) { cerrarHoja(); toast(j.mensaje, "ok"); cargarEstado(true); }).catch(fail); },
     conectar: conectar,
     demo: function () { cfg = { demo: true }; store("mg_cfg", cfg); S.estado = null; S.tab = "inicio"; cargarEstado(false); render(); }
