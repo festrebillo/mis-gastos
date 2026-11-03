@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.5.2";
+  var VERSION = "1.6.0";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -556,7 +556,8 @@
     h += '<div class="sec"><span>Regla 50 / 30 / 20</span></div><div class="card"><div class="kv"><span>Necesidades (meta 50%)</span><b>' + D.necesidades + '%</b></div><div class="kv"><span>Gustos (meta 30%)</span><b>' + D.gustos + '%</b></div><div class="kv"><span>Ahorro (meta 20%)</span><b>' + D.ahorro + '%</b></div></div>';
     return h;
   }
-  var PAL = ["#1F3FA8", "#3B82F6", "#8DB8FF", "#0E9F9A", "#F2A93B", "#E5484D", "#8B6CF0", "#64748B"];
+  var PAL_L = ["#0B0B0D", "#34343A", "#5B5B63", "#82828A", "#A6A6AE", "#C2C2C9", "#D6D6DB", "#E4E4E8"];
+  function PALc() { return document.documentElement.getAttribute("data-t") === "dark" ? PAL_L.slice().reverse() : PAL_L; }
   function donutCard(D) {
     var arr = D.categorias.filter(function (c) { return c.monto > 0; });
     var tot = arr.reduce(function (s, c) { return s + c.monto; }, 0);
@@ -565,7 +566,7 @@
     if (resto > 0.5) top.push({ categoria: "Otras", emoji: "•", monto: resto });
     var C = 2 * Math.PI * 52, off = 0, segs = "", leg = "";
     top.forEach(function (c, i) {
-      var len = c.monto / tot * C, col = PAL[i % PAL.length];
+      var len = c.monto / tot * C, col = PALc()[i % 8];
       var da = Math.max(0, len - (top.length > 1 ? 2.5 : 0)).toFixed(2) + " " + C.toFixed(2);
       segs += '<circle cx="70" cy="70" r="52" fill="none" stroke="' + col + '" stroke-width="16" transform="rotate(-90 70 70)" stroke-dashoffset="' + (-off).toFixed(2) + '" ' +
         (S.anim ? 'style="stroke-dasharray:0 ' + C.toFixed(2) + '" data-da="' + da + '"' : 'stroke-dasharray="' + da + '"') + '/>';
@@ -640,7 +641,7 @@
       (S.setupMsg ? '<div class="err">' + esc(S.setupMsg) + '</div>' : "") +
       '<div><label class="l" for="s-url">Enlace de tu script de Google</label><input class="field" id="s-url" autocomplete="off" autocapitalize="off" placeholder="https://script.google.com/macros/s/…/exec" value="' + esc(pre || (cfg && cfg.url) || "") + '"></div>' +
       '<div><label class="l" for="s-pin">PIN</label><input class="field" id="s-pin" type="password" autocomplete="off" placeholder="El que definiste en tu Excel"></div>' +
-      '<button class="btn" data-a="conectar">Conectar</button><button class="btn sec2" style="background:transparent;color:#fff;border-color:#4A6A96" data-a="demo">Ver demostración</button>' +
+      '<button class="btn" data-a="conectar">Conectar</button><button class="btn sec2" style="background:transparent;color:#fff;border-color:#6B6B73" data-a="demo">Ver demostración</button>' +
       '<p style="font-size:12px">Tu enlace y tu PIN se guardan solo en este teléfono. Nadie más los ve.</p></div>';
   }
   function conectar() {
