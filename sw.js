@@ -1,6 +1,6 @@
 /* Service worker: guarda la "cáscara" de la app para que abra al instante y sin conexión.
    Los datos NUNCA se guardan aquí: las llamadas al script de Google no pasan por este caché. */
-const VERSION = "mis-gastos-v26";
+const VERSION = "mis-gastos-v27";
 const ARCHIVOS = ["./", "index.html", "styles.css", "app.js", "demo.js", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png", "jsqr.js", "mascota.js", "emoji.js", "emoji.svg"];
 
 self.addEventListener("install", (e) => {

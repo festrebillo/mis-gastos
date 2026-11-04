@@ -111,3 +111,6 @@ Un dragón pasea y hace travesuras mientras la app está abierta (nunca tapa ni 
 - **Un día sin gastar es bueno:** los logros premian los días y rachas sin gastar (ya no el registrar). El mapa de calor marca esos días con borde de color y tu dragón lo celebra.
 - **Emoticones de Microsoft** en toda la app (Ajustes → Emoticones para volver a los del teléfono).
 - Tu dragón ya no tiene mejillas rosadas, y al tocarlo da 💪 😎 🔥 🤙; en vez de la mariposa patea una pelota.
+
+## Ingreso extra · v1.12.1
+Al registrar un ingreso con «Ingreso Extra» (o sin descripción) la app te pide **¿De qué fue?** y lo guarda con lo que escribas, por ejemplo «Venta de laptop», para que sepas después de qué fue.

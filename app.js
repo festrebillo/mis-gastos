@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.12.0";
+  var VERSION = "1.12.1";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -101,7 +101,8 @@
     F: nuevoForm(), G: { mes: mesClave(new Date()), q: "", cat: "", metodo: "", data: null, cargando: false },
     T: { cargando: false }, P: {}, FJ: { data: null, sel: {} }, IN: { mes: mesClave(new Date()), data: null }, lugares: []
   };
-  function nuevoForm() { return { modo: "gasto", monto: "", lugar: "", cat: "", catAuto: true, metodo: "Saldo Disponible", detalle: "", desc: "", ruc: "", fechaDoc: "", guardando: false }; }
+  function nuevoForm() { return { modo: "gasto", monto: "", lugar: "", cat: "", catAuto: true, metodo: "Saldo Disponible", detalle: "", desc: "", extra: "", ruc: "", fechaDoc: "", guardando: false }; }
+  function esExtra(d) { d = String(d || "").trim(); return !d || /^ingreso extra$/i.test(d); }   // sin descripción o «Ingreso Extra»: se pide un pequeño detalle
 
   S.ver = { ahorro: false, deuda: false };
   S.ocultoTodo = PREF.ocultarAlAbrir === true;      // por defecto solo «Ahorro» y «Deuda» arrancan ocultos; lo demás se ve
@@ -288,6 +289,8 @@
     } else {
       h += '<div><label class="l" for="f-desc">Descripción</label><input class="field" id="f-desc" autocomplete="off" placeholder="Ej.: Primera Quincena" value="' + esc(F.desc) + '"><div class="chips">' +
         ["Primera Quincena", "Segunda Quincena", "Ingreso Extra"].map(function (x) { return '<button class="chip' + (F.desc === x ? " sel" : "") + '" data-a="desc" data-v="' + x + '">' + x + '</button>'; }).join("") + '</div></div>';
+      h += '<div id="f-extra-w"' + (esExtra(F.desc) ? "" : " hidden") + '><label class="l" for="f-extra">¿De qué fue? (un pequeño detalle)</label><input class="field" id="f-extra" autocomplete="off" placeholder="Ej.: venta de laptop, bono, reembolso" value="' + esc(F.extra) + '"><div class="chips">' +
+        ["Venta", "Bono", "Reembolso", "Regalo", "Préstamo devuelto"].map(function (x) { return '<button class="chip" data-a="extraDet" data-v="' + x + '">' + x + '</button>'; }).join("") + '</div></div>';
     }
     h += '<button class="btn" id="f-ok" data-a="guardar"' + (F.guardando ? " disabled" : "") + '>' + (F.guardando ? '<span class="spin"></span> Guardando…' : (F.modo === "gasto" ? "Guardar gasto" : "Guardar ingreso")) + '</button>';
     return h;
@@ -305,10 +308,11 @@
   }
   var tl;
   function enlazarRegistrar() {
-    var m = $("#f-monto"), l = $("#f-lugar"), d = $("#f-det"), ds = $("#f-desc");
+    var m = $("#f-monto"), l = $("#f-lugar"), d = $("#f-det"), ds = $("#f-desc"), ex = $("#f-extra");
     if (m) m.addEventListener("input", function () { var v = limpiarNum(m.value); if (v !== m.value) m.value = v; S.F.monto = v; pintarPuedo(); });
     if (d) d.addEventListener("input", function () { S.F.detalle = d.value; });
-    if (ds) ds.addEventListener("input", function () { S.F.desc = ds.value; });
+    if (ds) ds.addEventListener("input", function () { S.F.desc = ds.value; var w = $("#f-extra-w"); if (w) w.hidden = !esExtra(ds.value); });
+    if (ex) ex.addEventListener("input", function () { S.F.extra = ex.value; });
     if (l) {
       l.addEventListener("input", function () {
         S.F.lugar = l.value; clearTimeout(tl);
@@ -336,7 +340,15 @@
     if (F.modo === "gasto") {
       if (!F.lugar.trim()) { toast("Escribe o elige el lugar", "err"); return; }
       body = { tipo: "gasto", tienda: F.lugar.trim(), categoria: F.cat, metodoPago: F.metodo, monto: monto, descripcion: F.detalle.trim() };
-    } else body = { tipo: "ingreso", descripcion: F.desc.trim() || "Ingreso Extra", monto: monto };
+    } else {
+      var dsc = F.desc.trim();
+      if (esExtra(dsc)) {                                                           // ingreso extra: se pide qué fue, como en el atajo
+        var det = F.extra.trim();
+        if (!det) { toast("Cuéntame de qué fue el ingreso: escribe un pequeño detalle", "err"); var ee = $("#f-extra"); if (ee) ee.focus(); return; }
+        dsc = det;                                                                  // se guarda con lo que escribes, para saber de qué fue
+      }
+      body = { tipo: "ingreso", descripcion: dsc, monto: monto };
+    }
     if (F.modo === "gasto") {
       if (F.fechaDoc) body.fecha = F.fechaDoc + "T12:00:00";                       // fecha impresa en la boleta
       if (F.ruc && F.lugar.trim()) { PREF.rucs = PREF.rucs || {}; PREF.rucs[F.ruc] = F.lugar.trim(); guardarPref(); }   // la próxima vez este RUC se reconoce solo
@@ -1259,6 +1271,7 @@
     modo: function (v) { S.F.modo = v; render(); if (v === "fijos") cargarFijos(); else { var m1 = $("#f-monto"); if (m1) m1.focus(); } },
     metodo: function (v) { S.F.metodo = v; render(); },
     desc: function (v) { S.F.desc = v; render(); },
+    extraDet: function (v) { S.F.extra = v; var e = $("#f-extra"); if (e) { e.value = v; e.focus(); } },
     elegirLugar: function () { hojaLugar(); },
     lugar: function (v) {
       S.F.lugar = v; S.F.catAuto = true; S.F.habitual = ""; cerrarHoja();
