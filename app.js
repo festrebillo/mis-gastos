@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.12.1";
+  var VERSION = "1.12.2";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -235,9 +235,7 @@
     var E = S.estado;
     if (!E) return skel(3);
     var h = fraseHtml() + bannerCola() + (S.offline ? '<div class="hint" style="text-align:center">📴 Sin conexión · mostrando tus últimos datos guardados</div>' : ""), pill;
-    if (E.banco === null) pill = '<span class="pill w">Escribe el saldo de tu banco en «Tarjeta» para comprobar</span>';
-    else if (Math.abs(E.diferencia) < 0.005) pill = '<span class="pill">✔ Cuadra con tu banco</span>';
-    else pill = '<span class="pill w">⚠ Difiere ' + mk(Math.abs(E.diferencia), 'ahorro') + ' con tu banco</span>';
+    pill = "";   // el ahorro ya es el saldo de la cuenta; el saldo del banco fue solo un corte inicial
     h += '<div class="cc"><div class="rowh"><span class="lbl">Ahorro disponible hoy</span>' + ojoK("ahorro", true) + '</div><div class="big"' + (visK("ahorro") ? ' data-n="' + E.ahorro + '"' : "") + '>' + bigK(E.ahorro, "ahorro") + '</div>' + pill +
       (E.reserva > 0 ? '<div class="kv" style="margin-top:8px"><span>🔒 Reservado para fijos</span><b>' + mk(E.reserva, "ahorro") + '</b></div>' : "") + '</div>';
     var t = E.tarjeta;
@@ -522,9 +520,9 @@
       h += '<div class="card"><div class="kv"><span>A pagar antes de la fecha límite</span><b>' + mk(t.pendiente, "deuda") + '</b></div><div class="kv"><span>Por facturar (próximo estado)</span><b>' + mk(t.porFacturar, "deuda") + '</b></div><div class="kv"><span>Compras tras el cierre (día ' + t.diaCierre + ')</span><b>' + mk(t.comprasCiclo, "deuda") + '</b></div><div class="kv"><span>Último cierre</span><b>' + esc(fechaCorta(t.ultimoCierre)) + '</b></div></div>';
       h += '<button class="btn sec2" data-a="hojaTarjeta">Llegó un estado de cuenta nuevo</button>';
     } else h += '<div class="card"><p class="hint">Aún no está configurada la hoja «Tarjeta» en tu Excel (menú 💰 Finanzas → Crear hojas nuevas).</p></div>';
-    h += '<div class="sec"><span>Conciliación con el banco</span></div><div class="card"><div class="rowh"><span class="lbl">Tu ahorro</span>' + ojoK("ahorro") + '</div><div class="kv"><span>Ahorro calculado</span><b>' + mk(E.ahorro, "ahorro") + '</b></div><div class="kv"><span>Saldo real del banco</span><b>' + (E.banco === null ? "—" : mk(E.banco, "ahorro")) + '</b></div>' +
-      (E.diferencia !== null ? '<div class="kv"><span>Diferencia</span><b style="color:' + (Math.abs(E.diferencia) < 0.005 ? 'var(--ok)' : 'var(--bad)') + '">' + (Math.abs(E.diferencia) < 0.005 ? "✔ Cuadra" : mk(E.diferencia, "ahorro")) + '</b></div>' : "") +
-      '<button class="btn sec2" style="margin-top:8px" data-a="hojaBanco">Escribir saldo del banco</button></div>';
+    h += '<div class="sec"><span>Conciliación con el banco</span></div><div class="card"><div class="rowh"><span class="lbl">Tu ahorro</span>' + ojoK("ahorro") + '</div><div class="kv"><span>Ahorro calculado</span><b>' + mk(E.ahorro, "ahorro") + '</b></div><div class="kv"><span>Saldo del banco (corte inicial)</span><b>' + (E.banco === null ? "—" : mk(E.banco, "ahorro")) + '</b></div>' +
+      '<p class="hint">Ese saldo fue el punto de partida. Desde ahí, tu ahorro suma ingresos y resta gastos, y debe coincidir con tu cuenta.</p>' +
+      '<button class="btn sec2" style="margin-top:8px" data-a="hojaBanco">Actualizar corte del banco</button></div>';
     if (E.ahorroMeses && E.ahorroMeses.length) {
       var max = Math.max.apply(null, E.ahorroMeses.map(function (x) { return Math.abs(x.neto); }).concat([1]));
       h += '<div class="sec"><span>Ahorro mes a mes</span></div><div class="card"><div class="mini">' + E.ahorroMeses.map(function (x, i) {
