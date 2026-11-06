@@ -356,6 +356,8 @@ a.btn{text-decoration:none}
 .md-bub{position:absolute;left:46px;top:-24px;font-size:19px;opacity:0;pointer-events:none;white-space:nowrap}
 .md-bub.on{animation:mdBub 1.5s ease-out forwards}
 @keyframes mdBub{0%{opacity:0;transform:translateY(8px) scale(.6)}15%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0;transform:translateY(-8px)}}
+.md-mc.md-num{width:auto;height:auto;min-width:16px;padding:2px 7px;border-radius:9px;right:-14px;top:30px;font:800 10px Arial;white-space:nowrap;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.big.md-rob,.md-rob{opacity:0;transform:scale(.6);transition:opacity .35s,transform .35s}
 .md-mc{position:absolute;right:6px;top:22px;width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,#fff,#A9A9B1);color:#3A3A40;font:800 6px Arial;display:grid;place-items:center}
 .md-bd{animation:mdBob 2s ease-in-out infinite}.md.walk .md-bd{animation:mdStep .3s ease-in-out infinite}
 @keyframes mdBob{50%{transform:translateY(-1.5px)}}@keyframes mdStep{50%{transform:translateY(-4px)}}
@@ -380,3 +382,24 @@ a.btn{text-decoration:none}
 /* emoticones de Microsoft (paquete emoji.svg) y días sin gastar */
 .em{display:inline-block;width:1.18em;height:1.18em;vertical-align:-.24em;flex:none}
 .hc.lz{background:transparent;box-shadow:inset 0 0 0 2px var(--a1,var(--ok));color:var(--ink)}
+
+/* mes perfecto, cofre, viaje */
+.mps{display:flex;gap:8px;margin-top:8px}
+.mpi{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border-radius:12px;background:var(--bg2,rgba(127,127,127,.12));opacity:.55;transition:opacity .3s,transform .3s}
+.mpi em{font-style:normal;font-size:20px;line-height:1}.mpi small{font-size:11px;color:var(--mut);text-align:center}
+.mpi.on{opacity:1;background:var(--tint,rgba(34,211,238,.16))}.mpi.on small{color:inherit;font-weight:600}
+.alert.cofre{background:linear-gradient(135deg,var(--a1,#22D3EE),var(--a2,#8B5CF6));color:var(--onacc,#0B0B0B);border:0;font-weight:600}
+.alert.cofre .chev{color:inherit}
+.btn[hidden]{display:none}
+.cf{position:relative;height:150px;margin-top:44px;display:flex;justify-content:center;align-items:flex-end;margin-bottom:10px}
+.cfs{width:190px;height:auto;overflow:visible}.cfs *{transform-box:view-box}
+.cf-glow{fill:#FFD84D;opacity:0;transition:opacity .6s}.cf.open .cf-glow{opacity:.16}
+.cf-lid{transform-origin:30px 62px;transition:transform .6s cubic-bezier(.3,1.5,.5,1)}.cf.open .cf-lid{transform:rotate(-52deg)}
+.cf-co{opacity:0;transition:transform .7s cubic-bezier(.2,1.4,.4,1) .15s,opacity .3s .15s}
+.cf.open .cf-co{opacity:1}.cf.open .c1{transform:translate(-14px,-34px)}.cf.open .c2{transform:translate(0,-46px)}.cf.open .c3{transform:translate(16px,-32px)}
+.cf-fe{position:absolute;right:calc(50% - 150px);bottom:0;animation:cfHop 1.4s ease-in-out infinite}.cf-fe svg{width:96px;height:auto;display:block}
+.cf.open .cf-fe{animation-duration:.7s}
+@keyframes cfHop{50%{transform:translateY(-8px)}}
+#cf-info:not([hidden]){animation:cfIn .5s ease-out}@keyframes cfIn{from{opacity:0;transform:translateY(10px)}}
+.card.vj .med,.card.mp .med{margin-top:4px}
+@media (prefers-reduced-motion:reduce){.cf-fe,#cf-info:not([hidden]){animation:none}.cf-lid,.cf-co{transition:none}}

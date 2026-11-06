@@ -114,3 +114,11 @@ Un dragón pasea y hace travesuras mientras la app está abierta (nunca tapa ni 
 
 ## Ingreso extra · v1.12.1
 Al registrar un ingreso con «Ingreso Extra» (o sin descripción) la app te pide **¿De qué fue?** y lo guarda con lo que escribas, por ejemplo «Venta de laptop», para que sepas después de qué fue.
+
+## Fergard, Mes perfecto, cofre, gasto raro y modo viaje · v1.13.0 (necesita el script v3.8.0)
+- **Tarjeta automática:** los datos que escribiste son el punto de partida. La app suma tus compras con tarjeta, resta tus pagos y, al pasar el día de cierre, calcula sola el monto a pagar y la nueva fecha límite. Ya no tienes que registrar cada estado de cuenta.
+- **Fergard** (tu dragón) salta entre tus tarjetas, se lleva el número de la deuda cuando usas la tarjeta y lo devuelve actualizado, juega en la barra de tu meta y celebra cuando la cumples.
+- **Mes perfecto:** 4 estrellas (ahorro, topes, 8 días sin gastar, sin gastos raros). Con tu primer mes perfecto Fergard estrena gafas; con el tercero, una corona.
+- **Cofre del mes:** los primeros días de cada mes ábrelo para ver tu resumen del mes anterior.
+- **Gasto raro:** si registras un monto muy por encima de lo habitual, te pregunta antes de guardarlo (ayuda a detectar un cero de más).
+- **Modo viaje:** Más → Modo viaje. Todo lo que registres queda marcado con el viaje y ves el total, por día y por categoría.

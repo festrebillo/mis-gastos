@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.12.2";
+  var VERSION = "1.13.0";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -91,6 +91,7 @@
     edit: '<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
     trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
     medal: '<svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="6"/><path d="M8.6 14 7 21l5-3 5 3-1.6-7"/></svg>',
+    trip: '<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>',
     cog: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2l.4 2.7h4l.4-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>'
   };
 
@@ -219,7 +220,7 @@
     if (!m) return '<button class="card" data-a="hojaMeta"><div class="rowh"><span class="lbl">Meta de ahorro mensual</span><span class="linkbtn">Definir</span></div><p class="hint" style="margin-top:4px">Elige cuánto quieres ahorrar cada mes y sigue tu avance aquí.</p></button>';
     var ok = m.logrado >= m.objetivo && m.objetivo > 0, pc = m.objetivo > 0 ? Math.max(0, Math.min(100, Math.round(m.logrado / m.objetivo * 100))) : 0;
     var falta = Math.max(0, m.objetivo - m.logrado);
-    return '<button class="card" data-a="hojaMeta"><div class="rowh"><span class="lbl">Meta de ahorro del mes</span><span class="hint">' + (m.tipo === "pct" ? m.valor + " % de tus ingresos" : money(m.valor) + " al mes") + '</span></div>' +
+    return '<button class="card" data-a="hojaMeta" data-md="meta"><div class="rowh"><span class="lbl">Meta de ahorro del mes</span><span class="hint">' + (m.tipo === "pct" ? m.valor + " % de tus ingresos" : money(m.valor) + " al mes") + '</span></div>' +
       '<div class="med" style="margin-top:4px">' + money(m.logrado) + ' <span style="font-size:14px;color:var(--mut);font-weight:600">de ' + money(m.objetivo) + '</span></div>' +
       '<div class="bar' + (ok ? " ok" : "") + '"><i ' + wi(pc) + '></i></div>' +
       '<div class="hint" style="margin-top:6px">' + (m.logrado < 0 ? "Este mes llevas más gastos que ingresos." : ok ? "🎉 ¡Meta cumplida este mes!" : "Te faltan " + money(falta) + " para tu meta") + '</div></button>';
@@ -234,13 +235,13 @@
   function vistaInicio() {
     var E = S.estado;
     if (!E) return skel(3);
-    var h = fraseHtml() + bannerCola() + (S.offline ? '<div class="hint" style="text-align:center">📴 Sin conexión · mostrando tus últimos datos guardados</div>' : ""), pill;
+    var h = fraseHtml() + cofreBanner() + bannerCola() + (S.offline ? '<div class="hint" style="text-align:center">📴 Sin conexión · mostrando tus últimos datos guardados</div>' : ""), pill;
     pill = "";   // el ahorro ya es el saldo de la cuenta; el saldo del banco fue solo un corte inicial
     h += '<div class="cc"><div class="rowh"><span class="lbl">Ahorro disponible hoy</span>' + ojoK("ahorro", true) + '</div><div class="big"' + (visK("ahorro") ? ' data-n="' + E.ahorro + '"' : "") + '>' + bigK(E.ahorro, "ahorro") + '</div>' + pill +
       (E.reserva > 0 ? '<div class="kv" style="margin-top:8px"><span>🔒 Reservado para fijos</span><b>' + mk(E.reserva, "ahorro") + '</b></div>' : "") + '</div>';
     var t = E.tarjeta;
     if (t) {
-      h += '<div class="cc"><div class="rowh"><span class="lbl">Deuda de la tarjeta</span>' + ojoK("deuda", true) + '</div><div class="big"' + (visK("deuda") ? ' data-n="' + t.deuda + '"' : "") + '>' + bigK(t.deuda, "deuda") + '</div>' +
+      h += '<div class="cc" data-md="deuda"><div class="rowh"><span class="lbl">Deuda de la tarjeta</span>' + ojoK("deuda", true) + '</div><div class="big"' + (visK("deuda") ? ' data-n="' + t.deuda + '"' : "") + '>' + bigK(t.deuda, "deuda") + '</div>' +
         '<div class="two"><div>A pagar antes del ' + esc(t.limite ? fechaCorta(t.limite).slice(0, 5) : "—") + '<b>' + mk(t.pendiente, "deuda") + '</b></div>' +
         '<div>Quedan<b class="w">' + (t.diasLimite === null ? "—" : t.diasLimite + " días") + '</b></div></div></div>';
     }
@@ -248,7 +249,7 @@
     h += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="lbl">Gastado este mes</span></div>' +
       '<div class="med">' + money(E.gastos) + '</div><div class="bar' + (E.gastos > E.ingresos ? ' b' : '') + '"><i ' + wi(pc) + '></i></div>' +
       '<div class="hint" style="margin-top:6px">💵 Saldo ' + money(E.gastosSaldo) + ' · 💳 Tarjeta ' + money(E.gastosTarjeta) + '</div></div>';
-    h += metaCard(E) + ritmoCard() + retoCard() + atajosInicio();
+    h += metaCard(E) + mpCard() + viajeCard() + ritmoCard() + retoCard() + atajosInicio();
     if (E.fijosPendientes > 0) h += '<button class="alert" data-a="ir" data-v="fijos"><span>⚠️</span><span style="flex:1;text-align:left">Fijos pendientes: <b>' + money(E.fijosPendientesMonto) + '</b> (' + E.fijosPendientes + ')</span><span class="chev">›</span></button>';
     var conTope = E.presupuesto.filter(function (p) { return p.tope && !p.referencia; }).sort(function (a, b) { return (b.pct || 0) - (a.pct || 0); }).slice(0, 4);
     if (conTope.length) {
@@ -281,6 +282,7 @@
       h += '<div><label class="l">Lugar</label><button class="catline" data-a="elegirLugar"><span>' + (F.lugar ? "📍 " + esc(F.lugar) : '<span style="color:var(--mut)">Toca para elegir el lugar</span>') + '</span><em>' + (F.lugar ? "Cambiar" : "Elegir") + '</em></button></div>';
       h += '<div><label class="l">Categoría</label><button class="catline" id="f-cat" data-a="elegirCat">' + catTxt() + '<em>' + (F.catAuto && F.cat ? "Sugerida · Cambiar" : "Cambiar") + '</em></button></div>';
       h += '<div><label class="l">Pagado con</label><div class="mset"><button class="' + (F.metodo === "Saldo Disponible" ? "on" : "") + '" data-a="metodo" data-v="Saldo Disponible">💵 Saldo Disponible</button><button class="' + (F.metodo === "Tarjeta de Crédito" ? "on" : "") + '" data-a="metodo" data-v="Tarjeta de Crédito">💳 Tarjeta</button></div></div>';
+      if (viajeActivo()) h += '<button class="cb' + (F.viaje !== false ? " on" : "") + '" data-a="viajeSw"><span class="box">' + (F.viaje !== false ? "✓" : "") + '</span><span style="flex:1">✈️ Es del viaje: ' + esc(viajeActivo().n) + '</span></button>';
       h += '<div><label class="l" for="f-det">Detalle (opcional)</label><input class="field" id="f-det" autocomplete="off" placeholder="Almuerzo, regalo…" value="' + esc(F.detalle) + '"></div>';
       h += '<div id="puedo-w">' + puedoHtml() + '</div>';
       h += '<button class="btn sec2 mini2" data-a="tplGuardar">⭐ Guardar como plantilla</button>';
@@ -338,6 +340,10 @@
     if (F.modo === "gasto") {
       if (!F.lugar.trim()) { toast("Escribe o elige el lugar", "err"); return; }
       body = { tipo: "gasto", tienda: F.lugar.trim(), categoria: F.cat, metodoPago: F.metodo, monto: monto, descripcion: F.detalle.trim() };
+      var vj = viajeActivo(), enViaje = !!(vj && F.viaje !== false);
+      if (enViaje) body.descripcion = (body.descripcion + " ✈[" + vj.n + "]").trim();          // marca el gasto como del viaje
+      if (!S.raroOk) { var rr = esRaro(body, enViaje); if (rr) { hojaRaro(rr); return; } }      // gasto muy por encima de lo habitual: pide confirmar
+      S.raroOk = false;
     } else {
       var dsc = F.desc.trim();
       if (esExtra(dsc)) {                                                           // ingreso extra: se pide qué fue, como en el atajo
@@ -360,7 +366,7 @@
       if (j.status === "error") throw new Error(j.mensaje);
       if (desdeForm) { var modo = S.F.modo; S.F = nuevoForm(); S.F.modo = modo; }
       S.G.data = null; S.T.cargado = false; S.retoTs = 0;
-      toast(j.mensaje || "✅ Guardado", "ok", 4800); celebrar(); cargarEstado(true); render(); enviarCola(false);
+      toast(j.mensaje || "✅ Guardado", "ok", 4800); celebrar(); cargarEstado(true); render(); enviarCola(false); reaccionTarjeta(body);
     }).catch(function (e) {
       if (desdeForm) S.F.guardando = false;
       if (esRed(e)) {
@@ -373,6 +379,11 @@
   }
   /* ---- registros pendientes (sin conexión) ---- */
   var COLA_K = "mg_cola", enviando = false;
+  function reaccionTarjeta(b) {       // Fergard se roba el número de la deuda al usar la tarjeta (y lo devuelve ya actualizado)
+    if (!window.MGM || b.tipo !== "gasto") return;
+    var cr = b.metodoPago === "Tarjeta de Crédito", pago = /deudas/i.test(b.categoria || "") && /tarjeta|ipad/i.test((b.tienda || "") + " " + (b.descripcion || ""));
+    if (cr || pago) MGM.reaccionar("tarjeta", { pago: pago && !cr });
+  }
   function nuevoId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function fechaLocal(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds()); }
   function cola() { return store(COLA_K) || []; }
@@ -443,7 +454,7 @@
         var tot = D.gastos.filter(function (x) { return x.fecha.slice(0, 10) === k; }).reduce(function (s, x) { return s + x.monto; }, 0);
         h += '<div class="day"><span>' + etiquetaDia(k) + '</span><span>' + money(tot) + '</span></div><div class="card lista">'; abierto = true;
       }
-      h += swr('<button class="it" data-a="verGasto" data-v="' + g.fila + '"><span class="ico">' + g.emoji + '</span><span class="t"><b>' + esc(g.lugar) + '</b><small>' + esc(g.categoria) + (detLimpio(g.detalle) && !g.fijo ? " · " + esc(detLimpio(g.detalle)) : "") + (detLink(g.detalle) ? " 📎" : "") + '</small></span>' +
+      h += swr('<button class="it" data-a="verGasto" data-v="' + g.fila + '"><span class="ico">' + g.emoji + '</span><span class="t"><b>' + esc(g.lugar) + '</b><small>' + esc(g.categoria) + (detLimpio(g.detalle) && !g.fijo ? " · " + esc(detLimpio(g.detalle)) : "") + (detLink(g.detalle) ? " 📎" : "") + (detViaje(g.detalle) ? " · ✈️ " + esc(detViaje(g.detalle)) : "") + '</small></span>' +
         '<span class="m">' + money(g.monto) + '<small class="' + (g.metodo === "Tarjeta de Crédito" ? "tc" : "") + '">' + (g.metodo === "Tarjeta de Crédito" ? "💳 Tarjeta" : "Saldo") + '</small></span></button>', "editarGasto", g.fila, "gasto");
     });
     if (abierto) h += '</div>';
@@ -485,7 +496,7 @@
   function guardarGasto(fila) {
     var g = S.G.data.gastos.filter(function (x) { return x.fila === fila; })[0];
     app("editar", { hoja: "gasto", fila: fila, firma: { monto: g.monto, texto: g.lugar },
-      nuevo: { lugar: $("#e-lugar").value, monto: $("#e-monto").value.replace(",", "."), fecha: $("#e-fecha").value, categoria: $("#e-cat").value, metodo: $("#e-met").value, detalle: $("#e-det").value.trim() + (detLink(g.detalle) ? " 📎 " + detLink(g.detalle) : "") } })
+      nuevo: { lugar: $("#e-lugar").value, monto: $("#e-monto").value.replace(",", "."), fecha: $("#e-fecha").value, categoria: $("#e-cat").value, metodo: $("#e-met").value, detalle: $("#e-det").value.trim() + (detViaje(g.detalle) ? " ✈[" + detViaje(g.detalle) + "]" : "") + (detLink(g.detalle) ? " 📎 " + detLink(g.detalle) : "") } })
       .then(function (j) { cerrarHoja(); toast(j.mensaje, "ok"); refrescarTodo(); }).catch(fail);
   }
   function hojaIngreso(fila) {
@@ -556,9 +567,10 @@
     if (S.sub === "fijos") return sub(vistaFijos());
     if (S.sub === "informes") return sub(vistaInformes());
     if (S.sub === "logros") return sub(vistaLogros());
+    if (S.sub === "viaje") return sub(vistaViaje());
     if (S.sub === "ajustes") return sub(vistaAjustes());
     function it(id, ico, t, d) { return '<button class="it" data-a="ir" data-v="' + id + '"><span class="ico">' + I[ico] + '</span><span class="t"><b>' + t + '</b><small>' + d + '</small></span><span class="chev">›</span></button>'; }
-    return '<div class="card menu" style="padding:4px 15px">' + it("presupuesto", "bud", "Presupuesto", "Topes por categoría y avance del mes") + it("fijos", "fix", "Gastos fijos", "Qué falta pagar este mes") + it("informes", "rep", "Informes y gráficas", "Línea del mes, calor, lugares y categorías") + it("logros", "medal", "Logros", "Medallas por tu constancia") + it("ajustes", "cog", "Ajustes", "PIN, conexión e instalación") + '</div>';
+    return '<div class="card menu" style="padding:4px 15px">' + it("presupuesto", "bud", "Presupuesto", "Topes por categoría y avance del mes") + it("fijos", "fix", "Gastos fijos", "Qué falta pagar este mes") + it("informes", "rep", "Informes y gráficas", "Línea del mes, calor, lugares y categorías") + it("logros", "medal", "Logros", "Medallas por tu constancia") + it("viaje", "trip", "Modo viaje", viajeActivo() ? "Viaje a " + esc(viajeActivo().n) + " en curso" : "Agrupa los gastos de un viaje") + it("ajustes", "cog", "Ajustes", "PIN, conexión e instalación") + '</div>';
   }
   function sub(c) { return '<button class="back" data-a="ir" data-v="">‹ Volver</button>' + c; }
   function vistaFijos() {
@@ -657,7 +669,7 @@
       (cc.id === "custom" ? '<p class="hint" style="margin-top:6px">Usando tu combinación personalizada.</p>' : "") + '</div>';
     h += '<div class="card"><div class="lbl">Mascota</div><div class="seg" style="margin-top:8px">' +
       [["activa", "Activa"], ["tranquila", "Tranquila"], ["apagada", "Apagada"]].map(function (o) { return '<button class="' + ((PREF.mascota || "activa") === o[0] ? "on" : "") + '" data-a="mascota" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
-      '</div><p class="hint" style="margin-top:6px">Tu dragón pasea y hace travesuras mientras la app está abierta, sin tapar nada ni bloquear tus toques. «Tranquila»: solo duerme y escupe chispas en su sitio. En «Registrar» se esconde mientras escribes. Evoluciona con tus logros.</p></div>';
+      '</div><p class="hint" style="margin-top:6px">Fergard, tu dragón, pasea y hace travesuras mientras la app está abierta (salta entre tus tarjetas, juega con tu meta y reacciona cuando usas la tarjeta), sin tapar nada ni bloquear tus toques. «Tranquila»: solo duerme y escupe chispas en su sitio. En «Registrar» se esconde mientras escribes. Evoluciona con tus logros.</p></div>';
     h += '<div class="card"><div class="lbl">Emoticones</div><div class="seg" style="margin-top:8px">' +
       [["ms", "Microsoft"], ["sys", "Del teléfono"]].map(function (o) { return '<button class="' + ((PREF.emoji || "ms") === o[0] ? "on" : "") + '" data-a="emoji" data-v="' + o[0] + '">' + o[1] + '</button>'; }).join("") +
       '</div><p class="hint" style="margin-top:6px">Los emoticones de Microsoft se ven igual en todos los teléfonos. «Del teléfono» usa los de Apple.</p></div>';
@@ -734,7 +746,7 @@
   function cargarEstado(silencioso) {
     if (!cfg) return;
     if (!silencioso && !S.estado) render();
-    app("estado").then(function (j) { if (!S.estado) S.anim = true; S.estado = j; S.offline = false; store("mg_estado", j); if (S.tab !== "registrar" || !silencioso) render(); if (PREF.reto) cargarReto(); evaluarLogros(); cargarRP(); })
+    app("estado").then(function (j) { if (!S.estado) S.anim = true; S.estado = j; S.offline = false; store("mg_estado", j); if (S.tab !== "registrar" || !silencioso) render(); if (PREF.reto) cargarReto(); evaluarLogros(); cargarRP(); cargarTipicos(); cargarViaje(false); })
       .catch(function (e) { if (esRed(e)) { S.offline = true; if (S.tab === "inicio") render(); } else fail(e); });
   }
   function refrescarTodo() { S.G.data = null; cargarEstado(true); if (S.tab === "gastos") { render(); cargarGastos(); } }
@@ -960,7 +972,9 @@
   }
 
   var RE_ADJ = /\s*📎\s*(https:\/\/\S+)\s*$/;
-  function detLimpio(d) { return String(d || "").replace(RE_ADJ, "").trim(); }
+  var RE_VJ = /\s*✈\[([^\]]+)\]/;
+  function detLimpio(d) { return String(d || "").replace(RE_ADJ, "").replace(RE_VJ, "").trim(); }
+  function detViaje(d) { var m = RE_VJ.exec(String(d || "").replace(RE_ADJ, "")); return m ? m[1] : ""; }
   function detLink(d) { var m = RE_ADJ.exec(String(d || "")); return m ? m[1] : ""; }
 
   /* ---- plantillas de gasto (se guardan en este teléfono) ---- */
@@ -1210,6 +1224,7 @@
   function dragonEtapa() { var n = logrosGanados(); return n >= 7 ? 3 : n >= 3 ? 2 : 1; }
   function mascotaPantalla() { if (window.MGM) MGM.pantalla(); }
   function evaluarLogros() {
+    try { mpGuardar(); } catch (e) {}
     var L = logrosDef(), prim = !PREF.logros, nuevos = [];
     PREF.logros = PREF.logros || {};
     L.forEach(function (x) { if (x.ok && !PREF.logros[x.id]) { PREF.logros[x.id] = ymd(new Date()); nuevos.push(x); } });
@@ -1225,12 +1240,179 @@
   function vistaLogros() {
     var L = logrosDef(), n = L.filter(logroOn).length, rp = S.RP;
     var h = '<div class="cc"><div class="lbl">Tus logros</div><div class="big">' + n + ' <sm>de ' + L.length + '</sm></div>' +
-      (function () { var q = ahorroDatos(); return q ? '<div class="kv" style="margin-top:8px"><span>💰 Sin gastar (seguidos)</span><b>' + q.racha + (q.racha === 1 ? " día" : " días") + '</b></div><div class="kv"><span>🌱 Días sin gastar este mes</span><b>' + q.dias + '</b></div>' : ""; })() + '</div>' + (window.MGM && MGM.ok() ? MGM.tarjeta() : "") + '<div class="lgg">';
+      (function () { var q = ahorroDatos(); return q ? '<div class="kv" style="margin-top:8px"><span>💰 Sin gastar (seguidos)</span><b>' + q.racha + (q.racha === 1 ? " día" : " días") + '</b></div><div class="kv"><span>🌱 Días sin gastar este mes</span><b>' + q.dias + '</b></div>' : ""; })() + '</div>' + (window.MGM && MGM.ok() ? MGM.tarjeta() : "") + mpCard() + mpHistorial() + '<div class="lgg">';
     L.forEach(function (x) {
       var f = PREF.logros && PREF.logros[x.id], on = logroOn(x);
       h += '<div class="logro' + (on ? " on" : "") + '"><span class="le">' + x.e + '</span><b>' + esc(x.t) + '</b><small>' + esc(x.d) + '</small><em>' + (on ? "✓ " + (f ? fechaCorta(f) : "Hoy") : esc(x.p)) + '</em></div>';
     });
     return h + '</div>';
+  }
+
+
+  /* ---------- Mes perfecto · cofre del mes · gasto raro · modo viaje ---------- */
+  function mesActual() { return mesClave(hoyE()); }
+  function nomMes(k) { return mesNombre(k).split(" ")[0]; }
+  function mpCriterios() {
+    var E = S.estado; if (!E) return null;
+    var m = E.metaAhorro, topes = (E.presupuesto || []).filter(function (p) { return p.tope && !p.referencia; }), ah = ahorroDatos(), dias = ah ? ah.dias : 0;
+    var tieneMeta = !!(m && m.objetivo > 0), raros = (PREF.raros && PREF.raros[mesActual()]) || 0;
+    return [
+      { id: "ahorro", e: "💰", t: "Ahorro", ok: tieneMeta ? m.logrado >= m.objetivo : (E.ingresos - E.gastosSaldo) > 0, d: tieneMeta ? "Cumple tu meta de ahorro del mes." : "Que tus ingresos superen lo que gastas con Saldo Disponible." },
+      { id: "topes", e: "🛡️", t: "Topes", ok: !topes.some(function (p) { return p.pct >= 100; }), d: topes.length ? "Ningún tope de categoría llega al 100 %." : "Ningún tope pasado (aún no fijas topes en Presupuesto)." },
+      { id: "dias", e: "🌱", t: "Días sin gastar", ok: dias >= 8, p: dias, d: "Llega a 8 días sin gastar en el mes (llevas " + dias + ")." },
+      { id: "raros", e: "🎯", t: "Sin gastos raros", ok: raros === 0, d: raros ? "Confirmaste " + raros + " gasto" + (raros > 1 ? "s" : "") + " fuera de lo habitual este mes." : "Ningún gasto fuera de lo habitual este mes." }
+    ];
+  }
+  function mpPerfectos() { var k = mesActual(), mp = PREF.mp || {}; return Object.keys(mp).filter(function (x) { return x < k && mp[x] && mp[x].e === 4; }).length; }
+  function mpGuardar() {
+    var C = mpCriterios(), E = S.estado; if (!C) return;
+    var ah = ahorroDatos(), k = mesActual(), v = { e: C.filter(function (x) { return x.ok; }).length, s: C.map(function (x) { return x.ok ? 1 : 0; }).join(""), ing: Math.round(E.ingresos), gas: Math.round(E.gastos), dias: ah ? ah.dias : 0 };
+    PREF.mp = PREF.mp || {};
+    if (JSON.stringify(PREF.mp[k] || null) !== JSON.stringify(v)) { PREF.mp[k] = v; guardarPref(); }
+    var m = E.metaAhorro;      // meta cumplida: Fergard salta a celebrarlo (una vez por mes)
+    if (m && m.objetivo > 0 && m.logrado >= m.objetivo && PREF.metaFest !== k) { PREF.metaFest = k; guardarPref(); if (window.MGM) MGM.reaccionar("meta"); }
+  }
+  function mpCard() {
+    var C = mpCriterios(); if (!C) return "";
+    var n = C.filter(function (x) { return x.ok; }).length, falta = C.filter(function (x) { return !x.ok; })[0];
+    return '<button class="card mp" data-a="mpDetalle"><div class="rowh"><span class="lbl">Mes perfecto</span><span class="hint">' + n + ' de 4 ⭐</span></div><div class="mps">' +
+      C.map(function (x) { return '<span class="mpi' + (x.ok ? " on" : "") + '"><em>' + x.e + '</em><small>' + esc(x.t) + '</small></span>'; }).join("") + '</div><div class="hint" style="margin-top:6px">' +
+      (n === 4 ? "¡Vas por un mes perfecto! Mantén el ritmo." : "Te falta: " + esc(falta.t) + (falta.id === "dias" ? " (" + falta.p + " de 8)" : "")) + '</div></button>';
+  }
+  function mpHistorial() {
+    var k = mesActual(), mp = PREF.mp || {}, ks = Object.keys(mp).filter(function (x) { return x < k; }).sort().reverse().slice(0, 6);
+    if (!ks.length) return "";
+    return '<div class="sec"><span>Meses cerrados</span></div><div class="card" style="padding:4px 15px">' + ks.map(function (x) {
+      var v = mp[x]; return '<div class="kv"><span>' + (v.e === 4 ? "🏆" : "📅") + ' ' + esc(mesNombre(x)) + '</span><b>' + v.e + ' de 4' + (v.e === 4 ? " · perfecto" : "") + '</b></div>';
+    }).join("") + '</div>';
+  }
+  function hojaMes() {
+    var C = mpCriterios(); if (!C) return; var pf = mpPerfectos();
+    abrirHoja('<div class="grab"></div><h3>🌟 Mes perfecto</h3><p class="hint">Cumple las 4 al cerrar el mes y será un mes perfecto. Con el primero Fergard estrena gafas, y con el tercero, una corona.</p><div class="card">' +
+      C.map(function (x) { return '<div class="kv"><span>' + x.e + ' ' + esc(x.t) + '<br><small style="color:var(--mut);font-weight:500">' + esc(x.d) + '</small></span><b style="color:' + (x.ok ? "var(--ok)" : "var(--mut)") + '">' + (x.ok ? "✓ Va bien" : "Pendiente") + '</b></div>'; }).join("") + '</div>' +
+      '<div class="kv"><span>🏆 Meses perfectos</span><b>' + pf + '</b></div>' + mpHistorial() + '<button class="btn sec2" data-a="cerrar">Cerrar</button>');
+  }
+
+  /* cofre del mes */
+  function cofreMes() { var h = hoyE(), pm = mesMover(mesClave(h), -1); if ((PREF.cofres || {})[pm] || h.getDate() > 20) return null; return pm; }
+  function cofreBanner() {
+    var pm = cofreMes(); if (!pm || !S.estado) return "";
+    return '<button class="alert cofre" data-a="cofre" data-v="' + pm + '"><span>🎁</span><span style="flex:1;text-align:left">Tu <b>cofre de ' + esc(nomMes(pm)) + '</b> está listo</span><span class="chev">›</span></button>';
+  }
+  function hojaCofre(pm) {
+    abrirHoja('<div class="grab"></div><h3>🎁 Cofre de ' + esc(nomMes(pm)) + '</h3><div id="cf-body"><p class="hint">Preparando tu cofre…</p></div>');
+    var rep = app("reportes", { mes: pm }).then(function (j) { return j; }, function () { return null; });
+    Promise.all([app("informes", { mes: pm }), rep]).then(function (r) { cofreVista(pm, r[0], r[1]); }).catch(function (e) { cerrarHoja(); fail(e); });
+  }
+  function mejorSemana(rep) {
+    var d = (rep && (rep.diasVar || rep.dias)) || [], n = d.length, b = null, a;
+    for (a = 0; a < n; a += 7) {
+      var z = Math.min(n, a + 7); if (z - a < 4) continue;
+      var t = 0, i; for (i = a; i < z; i++) t += d[i] || 0;
+      if (!b || t < b.t) b = { t: t, a: a + 1, z: z };
+    }
+    return b;
+  }
+  function cofreVista(pm, inf, rep) {
+    var el = $("#cf-body"); if (!el) return;
+    var ing = inf.ingresos || 0, gas = inf.gastos || 0, ant = inf.mesAnteriorGastos || 0, sn = (PREF.mp || {})[pm], top = (inf.categorias || [])[0], sw = mejorSemana(rep), vacio = !(ing || gas);
+    var cofre = '<div class="cf" id="cf"><svg viewBox="0 0 160 124" class="cfs" aria-hidden="true"><circle class="cf-glow" cx="80" cy="66" r="50"/>' +
+      '<rect x="30" y="62" width="100" height="50" rx="8" fill="#8A5A2B" stroke="#5B3A18" stroke-width="3"/><rect x="30" y="80" width="100" height="8" fill="#5B3A18"/><rect x="72" y="74" width="16" height="22" rx="3" fill="#F5B700" stroke="#B98200" stroke-width="2"/>' +
+      '<g class="cf-lid"><path d="M30 62Q30 26 80 26Q130 26 130 62Z" fill="#A9703A" stroke="#5B3A18" stroke-width="3"/><rect x="72" y="46" width="16" height="16" rx="3" fill="#F5B700" stroke="#B98200" stroke-width="2"/></g>' +
+      '<circle class="cf-co c1" cx="64" cy="58" r="7" fill="#F5B700" stroke="#B98200" stroke-width="2"/><circle class="cf-co c2" cx="82" cy="54" r="7" fill="#FFD84D" stroke="#B98200" stroke-width="2"/><circle class="cf-co c3" cx="98" cy="60" r="6" fill="#F5B700" stroke="#B98200" stroke-width="2"/></svg>' +
+      '<span class="cf-fe">' + (window.MGM && MGM.ok() ? MGM.svg({ w: 96 }) : "") + '</span></div>';
+    var info = '<div id="cf-info" hidden><p class="hint" style="text-align:center;margin:0 0 8px"><b>' + esc(nomMes(pm)) + '</b> en resumen</p><div class="card">' +
+      (vacio ? '<p class="hint">No hay movimientos en ese mes. ¡El siguiente es una hoja en blanco!</p>' :
+        '<div class="kv"><span>💰 Te quedó</span><b style="color:' + (ing - gas >= 0 ? "var(--ok)" : "var(--bad)") + '">' + money(ing - gas) + '</b></div>' +
+        '<div class="kv"><span>🧾 Gastaste</span><b>' + money(gas) + '</b></div>' +
+        (ant > 0 ? '<div class="kv"><span>📉 Frente al mes anterior</span><b style="color:' + (gas <= ant ? "var(--ok)" : "var(--bad)") + '">' + (gas <= ant ? "▼ " : "▲ ") + money(Math.abs(gas - ant)) + '</b></div>' : "") +
+        (rep && rep.diasSinGasto != null ? '<div class="kv"><span>🌱 Días sin gastar</span><b>' + rep.diasSinGasto + '</b></div>' : "") +
+        (sw ? '<div class="kv"><span>🗓️ Tu mejor semana</span><b>del ' + sw.a + ' al ' + sw.z + ' · ' + money(sw.t) + '</b></div>' : "") +
+        (top ? '<div class="kv"><span>📌 Lo que más pesó</span><b>' + top.emoji + ' ' + esc(top.categoria) + ' · ' + money(top.monto) + '</b></div>' : "")) + '</div>' +
+      (sn ? '<div class="card"><div class="kv"><span>🌟 Mes perfecto</span><b>' + sn.e + ' de 4 estrellas</b></div>' + (sn.e === 4 ? '<p class="hint" style="margin-top:6px">🏆 ¡Mes perfecto! Fergard lo celebra contigo.</p>' : "") + '</div>' : '<p class="hint" style="text-align:center">Este mes aún no tenía el juego del «Mes perfecto»; desde ahora Fergard lleva la cuenta.</p>') +
+      '<button class="btn" data-a="cerrar">¡Genial!</button></div>';
+    el.innerHTML = cofre + '<button class="btn" id="cf-ab" data-a="cofreAbrir" data-v="' + pm + '">Abrir cofre</button>' + info;
+  }
+  function cofreAbrir(pm) {
+    var c = $("#cf"), b = $("#cf-ab"), inf = $("#cf-info"); if (!c) return;
+    c.classList.add("open"); if (b) b.hidden = true;
+    PREF.cofres = PREF.cofres || {}; PREF.cofres[pm] = ymd(new Date()); guardarPref();
+    celebrar();
+    setTimeout(function () { if (inf) inf.hidden = false; }, reducido() ? 0 : 750);
+    var sn = (PREF.mp || {})[pm]; if (window.MGM) MGM.reaccionar(sn && sn.e === 4 ? "perfecto" : "cofre");
+    if (S.tab === "inicio") setTimeout(render, 50);
+  }
+
+  /* gasto raro: avisa antes de guardar un gasto muy por encima de lo habitual (usa el op «tipicos» del script v3.8.0) */
+  function normT(s) { return sinTilde(String(s || "").toLowerCase()).replace(/\s+/g, " ").trim(); }
+  function cargarTipicos() {
+    if (!cfg) return;
+    if (S.TIP && Date.now() - (S.TIPt || 0) < 6 * 3600e3) return;
+    S.TIPt = Date.now();
+    app("tipicos").then(function (j) { S.TIP = j; }).catch(function () { S.TIPt = Date.now() - 5.8 * 3600e3; });   // sin el script nuevo: se vuelve a intentar más tarde, sin avisar
+  }
+  function esRaro(b, enViaje) {
+    var T = S.TIP; if (!T || enViaje || !(b.monto >= 25)) return null;
+    var m = b.monto, c = T.categorias && b.categoria ? T.categorias[b.categoria] : null, l = T.lugares ? T.lugares[normT(b.tienda)] : null, ref = null;
+    if (l && l.n >= 3 && m > Math.max(l.p90 * 1.6, l.mediana * 2.5)) ref = { n: "en " + b.tienda, med: l.mediana, tope: l.p90 };
+    if (!ref && c && c.n >= 4 && m > Math.max(c.p90 * 2, c.mediana * 3)) ref = { n: "en " + b.categoria, med: c.mediana, tope: c.p90 };
+    if (!ref) return null;
+    var d10 = Math.round(m / 10 * 100) / 100;
+    return { monto: m, ref: ref, veces: Math.round(m / Math.max(1, ref.med) * 10) / 10, sug: (d10 >= ref.med * 0.5 && d10 <= ref.tope * 1.3) ? d10 : null };
+  }
+  function hojaRaro(r) {
+    abrirHoja('<div class="grab"></div><h3>🤔 ¿Seguro de este monto?</h3><div class="card"><p style="margin:0;line-height:1.45">Este gasto de <b>' + money(r.monto) + '</b> es unas <b>' + r.veces + ' veces</b> lo que sueles gastar ' + esc(r.ref.n) + ' (normalmente ' + money(r.ref.med) + ').</p></div>' +
+      '<button class="btn" data-a="raroSi">Sí, es correcto</button>' + (r.sug ? '<button class="btn sec2" data-a="raroSug" data-v="' + r.sug + '">Era ' + money(r.sug) + '</button>' : "") + '<button class="btn sec2" data-a="raroFix">Revisar el monto</button>' +
+      '<p class="hint">Si lo confirmas, el gasto se guarda igual; solo cuenta como «gasto raro» para tu Mes perfecto.</p>');
+    if (window.MGM) MGM.reaccionar("raro");
+  }
+
+  /* modo viaje: los gastos del viaje se marcan con ✈[nombre] en el detalle y se suman aparte */
+  function viajeActivo() { var v = PREF.viaje; return v && v.n ? v : null; }
+  function cargarViaje(forzar) {
+    var v = viajeActivo(); if (!v || !cfg) return;
+    S.VJ = S.VJ || {};
+    if (!forzar && S.VJ.n === v.n && Date.now() - (S.VJ.ts || 0) < 60000) return;
+    S.VJ.ts = Date.now(); S.VJ.n = v.n;
+    var meses = [], k = mesClave(parseF(v.ini) || new Date()), fin = mesClave(new Date()), g = 0;
+    while (k <= fin && g++ < 12) { meses.push(k); k = mesMover(k, 1); }
+    Promise.all(meses.map(function (m) { return app("gastos", { mes: m, q: "✈[" + v.n + "]" }); })).then(function (rs) {
+      var items = []; rs.forEach(function (r) { (r.gastos || []).forEach(function (x) { if (normT(detViaje(x.detalle)) === normT(v.n)) items.push(x); }); });
+      items.sort(function (a, b) { return a.fecha < b.fecha ? 1 : -1; });
+      S.VJ.items = items; S.VJ.total = items.reduce(function (s, x) { return s + x.monto; }, 0);
+      if (S.tab === "inicio" || S.sub === "viaje") render();
+    }).catch(function () { S.VJ.ts = 0; });
+  }
+  function viajeDias(v) { var a = parseF(v.ini), h = hoyE(); return a ? Math.max(1, Math.round((new Date(h.getFullYear(), h.getMonth(), h.getDate()) - new Date(a.getFullYear(), a.getMonth(), a.getDate())) / 864e5) + 1) : 1; }
+  function viajeCard() {
+    var v = viajeActivo(); if (!v) return "";
+    var V = S.VJ && S.VJ.n === v.n ? S.VJ : {}, total = V.total || 0, dias = viajeDias(v), pres = v.pres > 0 ? v.pres : 0, pc = pres ? Math.min(100, Math.round(total / pres * 100)) : null;
+    return '<button class="card vj" data-a="ir" data-v="viaje"><div class="rowh"><span class="lbl">✈️ Viaje: ' + esc(v.n) + '</span><span class="hint">día ' + dias + '</span></div><div class="med">' + money(total) +
+      (pres ? ' <span style="font-size:14px;color:var(--mut);font-weight:600">de ' + money(pres) + '</span>' : "") + '</div>' + (pc !== null ? '<div class="bar' + (total > pres ? " b" : "") + '"><i ' + wi(pc) + '></i></div>' : "") +
+      '<div class="hint" style="margin-top:6px">' + money(total / dias) + ' por día · toca para ver el detalle</div></button>';
+  }
+  function vistaViaje() {
+    var v = viajeActivo(), h = "", past = PREF.viajes || [];
+    if (!v) {
+      h += '<div class="card"><div class="lbl">Modo viaje</div><p class="hint" style="margin-top:4px">Empieza un viaje y todo lo que registres quedará marcado con él, para ver cuánto gastaste en total, por día y por categoría. Puedes dejar fuera un gasto con un toque al registrarlo.</p>' +
+        '<div><label class="l" for="v-n">¿A dónde vas?</label><input class="field" id="v-n" autocomplete="off" placeholder="Ej.: Cusco" maxlength="30"></div>' +
+        '<div><label class="l" for="v-p">Presupuesto del viaje (opcional, S/)</label><input class="field" id="v-p" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" autocomplete="off" placeholder="Ej.: 1500"></div>' +
+        '<button class="btn" data-a="viajeIniciar">✈️ Empezar viaje</button></div>';
+    } else {
+      cargarViaje(false);
+      var V = S.VJ && S.VJ.n === v.n ? S.VJ : {}, items = V.items || [], total = V.total || 0, dias = viajeDias(v), pres = v.pres > 0 ? v.pres : 0, porCat = {};
+      items.forEach(function (x) { var k = x.emoji + " " + x.categoria; porCat[k] = (porCat[k] || 0) + x.monto; });
+      h += '<div class="cc"><div class="rowh"><span class="lbl">✈️ ' + esc(v.n) + '</span><span class="hint" style="color:inherit;opacity:.8">desde el ' + esc(fechaCorta(v.ini).slice(0, 5)) + ' · día ' + dias + '</span></div><div class="big">' + bigMoney(total) + '</div>' +
+        '<div class="kv" style="margin-top:8px"><span>Por día</span><b>' + money(total / dias) + '</b></div><div class="kv"><span>Gastos del viaje</span><b>' + items.length + '</b></div>' +
+        (pres ? '<div class="kv"><span>Presupuesto</span><b>' + money(pres) + '</b></div><div class="bar' + (total > pres ? " b" : "") + '"><i ' + wi(Math.min(100, Math.round(total / pres * 100))) + '></i></div><div class="hint" style="margin-top:6px;color:inherit;opacity:.8">' + (total > pres ? "Te pasaste " + money(total - pres) : "Te quedan " + money(pres - total)) + '</div>' : "") + '</div>';
+      var cats = Object.keys(porCat).sort(function (a, b) { return porCat[b] - porCat[a]; });
+      if (cats.length) h += '<div class="sec"><span>Por categoría</span></div><div class="card" style="padding:4px 15px">' + cats.map(function (k) { return '<div class="kv"><span>' + esc(k) + '</span><b>' + money(porCat[k]) + '</b></div>'; }).join("") + '</div>';
+      if (items.length) h += '<div class="sec"><span>Gastos del viaje</span></div><div class="card lista">' + items.slice(0, 12).map(function (x) { return '<div class="it"><span class="ico">' + x.emoji + '</span><span class="t"><b>' + esc(x.lugar) + '</b><small>' + esc(fechaCorta(x.fecha)) + ' · ' + esc(x.categoria) + '</small></span><span class="m">' + money(x.monto) + '</span></div>'; }).join("") + '</div>';
+      else h += '<p class="hint">Aún no hay gastos en este viaje. Registra uno desde «Registrar» y aparecerá aquí.</p>';
+      h += '<button class="btn bad" data-a="viajeTerminar">Terminar viaje</button>';
+    }
+    if (past.length) h += '<div class="sec"><span>Viajes anteriores</span></div><div class="card" style="padding:4px 15px">' + past.slice(0, 8).map(function (x) { return '<div class="kv"><span>✈️ ' + esc(x.n) + '<br><small style="color:var(--mut)">' + esc(fechaCorta(x.ini).slice(0, 5)) + ' al ' + esc(fechaCorta(x.fin).slice(0, 5)) + '</small></span><b>' + money(x.total) + '</b></div>'; }).join("") + '</div>';
+    return h;
   }
 
   /* al volver a la app (iPhone la deja en la pantalla donde quedó): empieza de nuevo en Inicio con la bienvenida */
@@ -1263,6 +1445,7 @@
       if (v === "fijos") { S.tab = "mas"; S.sub = "fijos"; render(); cargarFijos(); }
       else if (v === "informes") { S.tab = "mas"; S.sub = "informes"; render(); cargarInformes(); }
       else if (v === "logros") { S.tab = "mas"; S.sub = "logros"; render(); cargarEstado(true); cargarRP(true); }
+      else if (v === "viaje") { S.tab = "mas"; S.sub = "viaje"; render(); cargarViaje(true); }
       else if (v === "presupuesto" || v === "ajustes") { S.tab = "mas"; S.sub = v; render(); if (v === "presupuesto") cargarEstado(true); }
       else { S.tab = "mas"; S.sub = null; render(); }
     },
@@ -1279,6 +1462,21 @@
     elegirCat: function () { hojaCategorias(); },
     cat: function (v) { S.F.catAuto = (v === S.F.habitual); S.F.cat = v; cerrarHoja(); render(); if (!S.F.monto) { var mm = $("#f-monto"); if (mm) mm.focus(); } },
     guardar: guardar,
+    mpDetalle: hojaMes, cofre: function (v) { hojaCofre(v); }, cofreAbrir: function (v) { cofreAbrir(v); },
+    raroSi: function () { var k = mesActual(); PREF.raros = PREF.raros || {}; PREF.raros[k] = (PREF.raros[k] || 0) + 1; guardarPref(); S.raroOk = true; cerrarHoja(); guardar(); },
+    raroSug: function (v) { S.F.monto = String(v); cerrarHoja(); render(); var m = $("#f-monto"); if (m) m.focus(); },
+    raroFix: function () { cerrarHoja(); var m = $("#f-monto"); if (m) { m.focus(); try { m.select(); } catch (e) {} } },
+    viajeSw: function () { S.F.viaje = !(S.F.viaje !== false); render(); },
+    viajeIniciar: function () {
+      var n = ($("#v-n").value || "").replace(/[\[\]]/g, "").trim(), p = parseFloat(String($("#v-p").value || "").replace(",", "."));
+      if (!n) { toast("Escribe a dónde vas", "err"); return; }
+      PREF.viaje = { n: n, ini: ymd(new Date()), pres: p > 0 ? p : 0 }; guardarPref(); S.VJ = null; toast("✈️ Viaje a " + n + " iniciado. Lo que registres quedará marcado.", "ok", 4200); render(); cargarViaje(true); if (window.MGM) MGM.reaccionar("viaje");
+    },
+    viajeTerminar: function () {
+      var v = viajeActivo(); if (!v) return; var V = S.VJ && S.VJ.n === v.n ? S.VJ : {};
+      PREF.viajes = [{ n: v.n, ini: v.ini, fin: ymd(new Date()), total: Math.round((V.total || 0) * 100) / 100 }].concat(PREF.viajes || []).slice(0, 20); delete PREF.viaje; guardarPref(); S.VJ = null;
+      toast("🧳 Viaje a " + v.n + " guardado: " + money(PREF.viajes[0].total), "ok", 4800); render(); if (window.MGM) MGM.reaccionar("viaje");
+    },
     mesG: function (v) { S.G.mes = mesMover(S.G.mes, +v); S.G.animar = true; S.G.data = null; render(); cargarGastos(); },
     metG: function (v) { S.G.metodo = v; S.G.data = null; render(); cargarGastos(); },
     catG: function () {
@@ -1497,7 +1695,7 @@
   bioDetectar();
   S.anim = true;
   render();
-  if (window.MGM) MGM.init({ pref: function () { return PREF; }, guardar: guardarPref, color: colorActual, mix: hexMix, toast: toast, etapa: dragonEtapa, logros: logrosGanados,
+  if (window.MGM) MGM.init({ pref: function () { return PREF; }, guardar: guardarPref, color: colorActual, mix: hexMix, toast: toast, etapa: dragonEtapa, logros: logrosGanados, perfectos: mpPerfectos,
     estado: function () { var h = $("#sheet"); return { tab: S.tab, locked: !!S.locked, cfg: !!cfg, hoja: !!(h && !h.hidden) }; } });
   if (cfg && !S.locked) { cargarEstado(true); enviarCola(false); }
   splashMostrar(false);
