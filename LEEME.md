@@ -122,3 +122,6 @@ Al registrar un ingreso con «Ingreso Extra» (o sin descripción) la app te pid
 - **Cofre del mes:** los primeros días de cada mes ábrelo para ver tu resumen del mes anterior.
 - **Gasto raro:** si registras un monto muy por encima de lo habitual, te pregunta antes de guardarlo (ayuda a detectar un cero de más).
 - **Modo viaje:** Más → Modo viaje. Todo lo que registres queda marcado con el viaje y ves el total, por día y por categoría.
+
+## v1.13.1
+- Al elegir el lugar, la lista de categorías abre al instante (antes esperaba ~3 s al servidor). La app recuerda en el teléfono la categoría de cada lugar; si el servidor sabe otra, la corrige después.

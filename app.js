@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.13.0";
+  var VERSION = "1.13.1";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -329,6 +329,8 @@
   }
   function sugerirCat(lugar) {
     if (!lugar || !S.F.catAuto) return;
+    var loc = (PREF.lugCat || {})[normT(lugar)];
+    if (loc) { S.F.cat = loc; S.F.habitual = loc; var b0 = $("#f-cat"); if (b0) b0.innerHTML = catTxt() + '<em>Sugerida · Cambiar</em>'; }
     call({ tipo: "sugerir", lugar: lugar }).then(function (j) {
       if (j && j.habitual && S.F.catAuto) { S.F.cat = j.habitual; var b = $("#f-cat"); if (b) b.innerHTML = catTxt() + '<em>Sugerida · Cambiar</em>'; }
     }).catch(function () {});
@@ -355,6 +357,7 @@
     }
     if (F.modo === "gasto") {
       if (F.fechaDoc) body.fecha = F.fechaDoc + "T12:00:00";                       // fecha impresa en la boleta
+      if (F.cat && F.lugar.trim()) { PREF.lugCat = PREF.lugCat || {}; PREF.lugCat[normT(F.lugar)] = F.cat; guardarPref(); }   // el lugar «aprende» su categoría en el teléfono: la próxima vez sale al instante
       if (F.ruc && F.lugar.trim()) { PREF.rucs = PREF.rucs || {}; PREF.rucs[F.ruc] = F.lugar.trim(); guardarPref(); }   // la próxima vez este RUC se reconoce solo
     }
     enviar(body, (F.modo === "gasto" ? body.tienda : body.descripcion) + " · " + money(body.monto), true);
@@ -1455,9 +1458,19 @@
     extraDet: function (v) { S.F.extra = v; var e = $("#f-extra"); if (e) { e.value = v; e.focus(); } },
     elegirLugar: function () { hojaLugar(); },
     lugar: function (v) {
-      S.F.lugar = v; S.F.catAuto = true; S.F.habitual = ""; cerrarHoja();
-      call({ tipo: "sugerir", lugar: v }).then(function (j) { if (j && j.habitual) { S.F.habitual = j.habitual; S.F.cat = j.habitual; } })
-        .catch(function () {}).then(function () { render(); hojaCategorias(); });
+      // instantáneo: usa la categoría que ya recordamos en el teléfono, abre la lista sin esperar al servidor
+      // y, si el servidor sabe algo mejor, lo corrige después (solo si aún no elegiste nada)
+      var lk = normT(v), loc = (PREF.lugCat || {})[lk] || "";
+      S.F.lugar = v; S.F.catAuto = true; S.F.habitual = loc; S.F.cat = loc; cerrarHoja(); render(); hojaCategorias();
+      var abierta = S.F.lugar === v;
+      call({ tipo: "sugerir", lugar: v }).then(function (j) {
+        if (!j || !j.habitual || S.F.lugar !== v || !abierta) return;
+        PREF.lugCat = PREF.lugCat || {}; PREF.lugCat[lk] = j.habitual; guardarPref();
+        if (j.habitual === S.F.habitual) return;
+        var esperando = !$("#sheet").hidden && /Categor/.test($("#sheet").innerText || "");
+        S.F.habitual = j.habitual; if (S.F.catAuto) S.F.cat = j.habitual;
+        render(); if (esperando) hojaCategorias();
+      }).catch(function () {});
     },
     elegirCat: function () { hojaCategorias(); },
     cat: function (v) { S.F.catAuto = (v === S.F.habitual); S.F.cat = v; cerrarHoja(); render(); if (!S.F.monto) { var mm = $("#f-monto"); if (mm) mm.focus(); } },
