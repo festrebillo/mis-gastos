@@ -125,3 +125,6 @@ Al registrar un ingreso con «Ingreso Extra» (o sin descripción) la app te pid
 
 ## v1.13.1
 - Al elegir el lugar, la lista de categorías abre al instante (antes esperaba ~3 s al servidor). La app recuerda en el teléfono la categoría de cada lugar; si el servidor sabe otra, la corrige después.
+
+## Script v3.8.1
+- Las consultas (lugares, sugerir, estado, gastos, informes, tipicos…) ya no toman el candado del script. Antes podían hacer fila detrás de un registro y, si el candado expiraba, llegaba el correo «Registro NO guardado» aunque el gasto sí se había guardado. Una consulta que falla ya no manda correo.
