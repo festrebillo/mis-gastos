@@ -403,3 +403,43 @@ a.btn{text-decoration:none}
 #cf-info:not([hidden]){animation:cfIn .5s ease-out}@keyframes cfIn{from{opacity:0;transform:translateY(10px)}}
 .card.vj .med,.card.mp .med{margin-top:4px}
 @media (prefers-reduced-motion:reduce){.cf-fe,#cf-info:not([hidden]){animation:none}.cf-lid,.cf-co{transition:none}}
+
+/* ===== v1.14.0 · estructura de app nativa (sistema Fergard) ===== */
+/* cabecera compacta: título en una línea, fecha en minúscula */
+.hdr{padding:calc(var(--sat) + 8px) 18px 16px;align-items:center;box-shadow:none}
+.hdr::before{opacity:.45}
+.hdr>div:first-child{min-width:0;flex:1}
+.hdr small{font-size:13px;letter-spacing:0;text-transform:none;font-weight:500}
+.hdr h1{font-size:21px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr h1 img{display:inline-block;height:1em;width:1em;vertical-align:-.14em}
+.hdr .ic{width:38px;height:38px;border-radius:50%}
+/* superficies planas: borde fino, sin degradado ni sombra gruesa */
+.card{background:var(--card);box-shadow:none}
+.cc{box-shadow:none}
+.lbl,label.l{text-transform:none;letter-spacing:0;font-size:13px;font-weight:600}
+.sec{text-transform:none;letter-spacing:0;font-size:14px;font-weight:700}
+/* una sola tarjeta héroe: el ahorro; la deuda pasa a tarjeta compacta */
+.cc .big{font-size:42px}
+.cc.cc2{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.cc.cc2::before{display:none}
+.cc.cc2 .lbl{color:var(--mut)}
+.cc.cc2 .big{color:var(--navy);font-size:30px}
+.cc.cc2 .big sm{color:var(--mut)}
+.cc.cc2 .two div{background:var(--onbg);border-color:transparent;color:var(--mut)}
+.cc.cc2 .two b,.cc.cc2 .two b.w{color:var(--ink)}
+/* el cofre deja de ser una barra de color a todo el ancho */
+.alert.cofre{background:var(--card);color:var(--ink);border:1px solid var(--line);font-weight:500}
+.alert.cofre b{font-weight:700}
+/* barra inferior: el color vive en el «+»; la pestaña activa solo cambia de tinte */
+.tabs .ind{background:var(--onbg)}
+.tab.on{color:var(--ink)}
+.tab.on svg{stroke:var(--a2,var(--steel))}
+.tab.plus,.tab.plus.on{color:var(--mut)}
+.tab.plus.on{color:var(--ink)}
+.tab.plus .c{margin-top:-35px!important}
+/* Registrar: el monto es el protagonista, sin caja */
+.amt{border:0;background:none;box-shadow:none;justify-content:center;padding:6px 0}
+.amt:focus-within{box-shadow:none}
+.amt input{flex:0 1 auto;width:7ch;font-size:56px}
+@media (max-width:400px){.hdr h1{font-size:20px}.hdr h1 img{display:none}}
+.cc.cc2{--ccp:var(--onbg)}
