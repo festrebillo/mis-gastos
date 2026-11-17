@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.14.0";
+  var VERSION = "1.15.0";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -232,24 +232,33 @@
       '<div><label class="l" id="m-lbl">' + (tipo === "pct" ? "Porcentaje (%)" : "Monto al mes (S/)") + '</label><input class="field" id="m-val" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" autocomplete="off" value="' + (m ? m.valor : "") + '" placeholder="' + (tipo === "pct" ? "Ej.: 20" : "Ej.: 600") + '"></div>' +
       '<button class="btn" data-a="metaGuardar">Guardar meta</button>' + (m ? '<button class="btn sec2" data-a="metaQuitar">Quitar meta</button>' : "") + '<button class="btn sec2" data-a="cerrar">Cancelar</button>');
   }
+  function filaG(ico, tit, sub, der, attrs) {
+    return '<button class="row" ' + attrs + '><span class="gi">' + ico + '</span><span class="gt"><b>' + tit + '</b><small>' + sub + '</small></span>' + (der ? '<span class="gr">' + der + '</span>' : '<span class="chev">›</span>') + '</button>';
+  }
+  function metaFila(E) {
+    var m = E.metaAhorro;
+    if (!m) return filaG("⭐", "Meta de ahorro mensual", "Elige cuánto quieres ahorrar cada mes", "Definir", 'data-a="hojaMeta"');
+    var ok = m.logrado >= m.objetivo && m.objetivo > 0, pc = m.objetivo > 0 ? Math.max(0, Math.min(100, Math.round(m.logrado / m.objetivo * 100))) : 0, falta = Math.max(0, m.objetivo - m.logrado);
+    return filaG("⭐", "Meta de ahorro del mes", money(m.logrado) + " de " + money(m.objetivo) + (m.logrado < 0 ? " · más gastos que ingresos" : ok ? " · ¡cumplida!" : " · faltan " + money(falta)), pc + "%", 'data-a="hojaMeta" data-md="meta"');
+  }
+  function cofreFila() {
+    var pm = cofreMes(); if (!pm || !S.estado) return "";
+    return filaG("🎁", "Tu cofre de " + esc(nomMes(pm)), "Está listo para abrir", "", 'data-a="cofre" data-v="' + pm + '"');
+  }
   function vistaInicio() {
     var E = S.estado;
     if (!E) return skel(3);
-    var h = fraseHtml() + cofreBanner() + bannerCola() + (S.offline ? '<div class="hint" style="text-align:center">📴 Sin conexión · mostrando tus últimos datos guardados</div>' : ""), pill;
-    pill = "";   // el ahorro ya es el saldo de la cuenta; el saldo del banco fue solo un corte inicial
-    h += '<div class="cc"><div class="rowh"><span class="lbl">Ahorro disponible hoy</span>' + ojoK("ahorro", true) + '</div><div class="big"' + (visK("ahorro") ? ' data-n="' + E.ahorro + '"' : "") + '>' + bigK(E.ahorro, "ahorro") + '</div>' + pill +
-      (E.reserva > 0 ? '<div class="kv" style="margin-top:8px"><span>🔒 Reservado para fijos</span><b>' + mk(E.reserva, "ahorro") + '</b></div>' : "") + '</div>';
-    var t = E.tarjeta;
-    if (t) {
-      h += '<div class="cc cc2" data-md="deuda"><div class="rowh"><span class="lbl">Deuda de la tarjeta</span>' + ojoK("deuda", true) + '</div><div class="big"' + (visK("deuda") ? ' data-n="' + t.deuda + '"' : "") + '>' + bigK(t.deuda, "deuda") + '</div>' +
-        '<div class="two"><div>A pagar antes del ' + esc(t.limite ? fechaCorta(t.limite).slice(0, 5) : "—") + '<b>' + mk(t.pendiente, "deuda") + '</b></div>' +
-        '<div>Quedan<b class="w">' + (t.diasLimite === null ? "—" : t.diasLimite + " días") + '</b></div></div></div>';
-    }
-    var pc = E.ingresos > 0 ? Math.min(100, Math.round(E.gastos / E.ingresos * 100)) : 0;
-    h += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="lbl">Gastado este mes</span></div>' +
-      '<div class="med">' + money(E.gastos) + '</div><div class="bar' + (E.gastos > E.ingresos ? ' b' : '') + '"><i ' + wi(pc) + '></i></div>' +
-      '<div class="hint" style="margin-top:6px">💵 Saldo ' + money(E.gastosSaldo) + ' · 💳 Tarjeta ' + money(E.gastosTarjeta) + '</div></div>';
-    h += metaCard(E) + mpCard() + viajeCard() + ritmoCard() + retoCard() + atajosInicio();
+    var h = bannerCola() + (S.offline ? '<div class="hint" style="text-align:center">📴 Sin conexión · mostrando tus últimos datos guardados</div>' : "");
+    h += '<div class="cc hero"><div class="rowh"><span class="lbl">Ahorro disponible hoy</span>' + ojoK("ahorro", true) + '</div><div class="big"' + (visK("ahorro") ? ' data-n="' + E.ahorro + '"' : "") + '>' + bigK(E.ahorro, "ahorro") + '</div>' +
+      (E.reserva > 0 ? '<div class="kv" style="margin-top:10px"><span>🔒 Reservado para fijos</span><b>' + mk(E.reserva, "ahorro") + '</b></div>' : "") + '</div>';
+    var t = E.tarjeta, pc = E.ingresos > 0 ? Math.min(100, Math.round(E.gastos / E.ingresos * 100)) : 0;
+    h += '<div class="pair">';
+    if (t) h += '<div class="card mc" data-md="deuda"><div class="rowh"><span class="lbl">Deuda tarjeta</span>' + ojoK("deuda", true) + '</div><div class="med"' + (visK("deuda") ? ' data-n="' + t.deuda + '"' : "") + '>' + bigK(t.deuda, "deuda") + '</div>' +
+      '<div class="hint">' + (t.diasLimite === null ? "Sin fecha límite" : "Vence en <b>" + t.diasLimite + " días</b>") + '</div><div class="hint">A pagar ' + mk(t.pendiente, "deuda") + (t.limite ? " antes del " + esc(fechaCorta(t.limite).slice(0, 5)) : "") + '</div></div>';
+    h += '<div class="card mc"><span class="lbl">Gastado este mes</span><div class="med">' + money(E.gastos) + '</div><div class="bar' + (E.gastos > E.ingresos ? ' b' : '') + '"><i ' + wi(pc) + '></i></div>' +
+      '<div class="hint">💵 ' + money(E.gastosSaldo) + ' · 💳 ' + money(E.gastosTarjeta) + '</div></div></div>';
+    h += '<div class="grp">' + metaFila(E) + cofreFila() + '</div>' + fraseHtml();
+    h += mpCard() + viajeCard() + ritmoCard() + retoCard() + atajosInicio();
     if (E.fijosPendientes > 0) h += '<button class="alert" data-a="ir" data-v="fijos"><span>⚠️</span><span style="flex:1;text-align:left">Fijos pendientes: <b>' + money(E.fijosPendientesMonto) + '</b> (' + E.fijosPendientes + ')</span><span class="chev">›</span></button>';
     var conTope = E.presupuesto.filter(function (p) { return p.tope && !p.referencia; }).sort(function (a, b) { return (b.pct || 0) - (a.pct || 0); }).slice(0, 4);
     if (conTope.length) {
@@ -277,13 +286,13 @@
     if (F.modo === "fijos") return h + vistaFijos();
     if (F.modo === "gasto" && F.fechaDoc) h += '<div class="hint">🧾 Fecha de la boleta: <b>' + esc(fechaCorta(F.fechaDoc)) + '</b> · <button class="linkbtn" data-a="quitarFechaDoc">usar hoy</button></div>';
     if (F.modo === "gasto") h += '<div class="filt"><button class="chip" data-a="hojaQR">📷 Escanear QR</button><button class="chip" data-a="hojaVoz">🎤 Dictar</button>' + tplLista().map(function (x, i) { return '<button class="chip" data-a="tpl" data-v="' + i + '">⭐ ' + esc(x.n) + ' · S/ ' + x.monto + '</button>'; }).join("") + '</div>';
-    h += '<div class="amt"><span>S/</span><input id="f-monto" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" autocomplete="off" placeholder="0.00" value="' + esc(F.monto) + '" aria-label="Monto"></div>';
+    h += '<div class="amt"><span>S/</span><input id="f-monto" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" enterkeyhint="done" autocomplete="off" placeholder="0.00" value="' + esc(F.monto) + '" aria-label="Monto"></div><div class="amt-s">' + (F.fechaDoc ? esc(fechaCorta(F.fechaDoc)) : "Hoy · " + new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: false })) + '</div>';
     if (F.modo === "gasto") {
-      h += '<div><label class="l">Lugar</label><button class="catline" data-a="elegirLugar"><span>' + (F.lugar ? "📍 " + esc(F.lugar) : '<span style="color:var(--mut)">Toca para elegir el lugar</span>') + '</span><em>' + (F.lugar ? "Cambiar" : "Elegir") + '</em></button></div>';
-      h += '<div><label class="l">Categoría</label><button class="catline" id="f-cat" data-a="elegirCat">' + catTxt() + '<em>' + (F.catAuto && F.cat ? "Sugerida · Cambiar" : "Cambiar") + '</em></button></div>';
-      h += '<div><label class="l">Pagado con</label><div class="mset"><button class="' + (F.metodo === "Saldo Disponible" ? "on" : "") + '" data-a="metodo" data-v="Saldo Disponible">💵 Saldo Disponible</button><button class="' + (F.metodo === "Tarjeta de Crédito" ? "on" : "") + '" data-a="metodo" data-v="Tarjeta de Crédito">💳 Tarjeta</button></div></div>';
+      h += '<div class="grp"><button class="row" data-a="elegirLugar"><span class="gi">📍</span><span class="gk">Lugar</span><span class="gv">' + (F.lugar ? esc(F.lugar) : '<i>Elegir</i>') + '</span><span class="chev">›</span></button>' +
+        '<button class="row" data-a="elegirCat"><span class="gi">🏷️</span><span class="gk">Categoría</span><span class="gv" id="f-cat">' + catTxt() + '<em>' + (F.catAuto && F.cat ? "Sugerida · Cambiar" : "Cambiar") + '</em></span><span class="chev">›</span></button>' +
+        '<div class="row"><span class="gi">💳</span><span class="gk">Pagado con</span><div class="mseg"><button class="' + (F.metodo === "Saldo Disponible" ? "on" : "") + '" data-a="metodo" data-v="Saldo Disponible">Saldo</button><button class="' + (F.metodo === "Tarjeta de Crédito" ? "on" : "") + '" data-a="metodo" data-v="Tarjeta de Crédito">Tarjeta</button></div></div>' +
+        '<label class="row"><span class="gi">📝</span><input class="gin" id="f-det" autocomplete="off" placeholder="Detalle (opcional)" aria-label="Detalle" value="' + esc(F.detalle) + '"></label></div>';
       if (viajeActivo()) h += '<button class="cb' + (F.viaje !== false ? " on" : "") + '" data-a="viajeSw"><span class="box">' + (F.viaje !== false ? "✓" : "") + '</span><span style="flex:1">✈️ Es del viaje: ' + esc(viajeActivo().n) + '</span></button>';
-      h += '<div><label class="l" for="f-det">Detalle (opcional)</label><input class="field" id="f-det" autocomplete="off" placeholder="Almuerzo, regalo…" value="' + esc(F.detalle) + '"></div>';
       h += '<div id="puedo-w">' + puedoHtml() + '</div>';
       h += '<button class="btn sec2 mini2" data-a="tplGuardar">⭐ Guardar como plantilla</button>';
     } else {

@@ -443,3 +443,52 @@ a.btn{text-decoration:none}
 .amt input{flex:0 1 auto;width:7ch;font-size:56px}
 @media (max-width:400px){.hdr h1{font-size:20px}.hdr h1 img{display:none}}
 .cc.cc2{--ccp:var(--onbg)}
+
+/* ===== v1.15: estructura de app nativa (maqueta «Después») ===== */
+/* cabecera: sin bloque negro, título grande sobre el fondo */
+.hdr,:root[data-c] .hdr{background:none;color:var(--ink);padding:calc(var(--sat) + 12px) 18px 6px;align-items:flex-end;overflow:visible}
+.hdr::before,.hdr::after{display:none}
+.hdr small{color:var(--mut);font-size:14px;font-weight:500}
+.hdr h1{font-size:30px;font-weight:800;letter-spacing:-.7px;white-space:normal;line-height:1.1}
+.hdr h1 b{color:var(--ink)}
+.hdr .ic{width:42px;height:42px;background:var(--card);border:1px solid var(--line);color:var(--ink);-webkit-backdrop-filter:none;backdrop-filter:none}
+/* héroe */
+.cc.hero{padding:20px 20px 18px;border-radius:26px}
+.cc.hero .big{font-size:46px;margin-top:6px}
+/* tarjetas compactas lado a lado */
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}.pair>.mc:only-child{grid-column:1/-1}
+.card.mc{padding:14px;border-radius:20px;min-width:0}
+.card.mc .lbl{display:block}.card.mc .med{font-size:22px;margin-top:4px}.card.mc .med sm{font-size:14px}
+.card.mc .hint{margin-top:4px;font-size:12px;overflow-wrap:anywhere}
+.card.mc .bar{margin-top:8px}
+.card.mc .rowh .eye{margin:-6px -6px -6px 0;width:30px;height:30px}
+/* lista agrupada (al estilo Ajustes de iOS) */
+.grp{background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.grp .row{display:flex;align-items:center;gap:12px;width:100%;min-height:58px;padding:10px 16px;text-align:left;border-top:1px solid var(--line);background:none;color:var(--ink)}
+.grp .row:first-child{border-top:0}
+.grp .gi{width:36px;height:36px;border-radius:11px;background:var(--ico);display:grid;place-items:center;font-size:18px;flex:none}
+.grp .gt{flex:1;min-width:0}.grp .gt b{display:block;font-size:16px;font-weight:600}.grp .gt small{display:block;font-size:13px;color:var(--mut);margin-top:1px}
+.grp .gr{font-weight:700;font-size:15px;color:var(--ink)}
+.grp .chev{color:var(--mut);font-size:22px;line-height:1}
+.grp .gk{font-size:16px;font-weight:600;flex:none}
+.grp .gv{flex:1;min-width:0;text-align:right;font-size:16px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.grp .gv i{font-style:normal;color:var(--mut)}.grp .gv em{display:block;font-style:normal;font-size:11.5px;color:var(--mut);font-weight:500}
+.grp .gin{flex:1;min-width:0;border:0;outline:0;background:none;font-size:16px;color:var(--ink)}
+.mseg{display:flex;margin-left:auto;background:var(--segbg);border-radius:11px;padding:3px}
+.mseg button{padding:8px 14px;border-radius:9px;font-size:14px;font-weight:600;color:var(--mut)}
+.mseg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.amt-s{text-align:center;color:var(--mut);font-size:14px;margin-top:-4px}
+/* Guardar fijo abajo, al alcance del pulgar */
+#f-ok{position:sticky;bottom:calc(var(--sab) + 92px);z-index:5}
+/* barra inferior: solo el «+» lleva color; la pestaña activa solo cambia de tinte */
+.tabs .ind{display:none}
+.tab.on{color:var(--ink);font-weight:700}.tab.on svg{stroke:var(--ink);transform:none}
+.tab.on:not(.plus)::after{content:"";display:block;width:4px;height:4px;border-radius:50%;background:var(--ink);margin:3px auto -3px}
+
+.card.mc{display:block}
+.hdr h1{font-size:26px}
+.cc.hero{padding:16px 20px 16px}.cc.hero .big{font-size:44px;margin-top:2px}
+
+/* «Mes perfecto»: el fondo oscuro de las insignias logradas dejaba el texto ilegible en modo claro */
+.mpi.on{background:var(--onbg);box-shadow:inset 0 0 0 1.5px var(--ink);color:var(--ink)}
+.mpi.on small{color:var(--ink)}
