@@ -478,8 +478,8 @@ a.btn{text-decoration:none}
 .mseg button{padding:8px 14px;border-radius:9px;font-size:14px;font-weight:600;color:var(--mut)}
 .mseg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.18)}
 .amt-s{text-align:center;color:var(--mut);font-size:14px;margin-top:-4px}
-/* Guardar fijo abajo, al alcance del pulgar */
-#f-ok{position:sticky;bottom:calc(var(--sab) + 92px);z-index:5}
+/* Guardar: en el flujo normal del formulario (el sticky flotaba sobre el contenido y saltaba con el teclado) */
+#f-ok{position:static}
 /* barra inferior: solo el «+» lleva color; la pestaña activa solo cambia de tinte */
 .tabs .ind{display:none}
 .tab.on{color:var(--ink);font-weight:700}.tab.on svg{stroke:var(--ink);transform:none}

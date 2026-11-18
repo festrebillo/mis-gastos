@@ -2,7 +2,7 @@
    Sin librerías. Los datos viven en tu Excel; aquí solo se guardan el enlace del script, el PIN y la última vista. */
 (function () {
   "use strict";
-  var VERSION = "1.15.0";
+  var VERSION = "1.15.1";
 
   /* ---------- utilidades ---------- */
   var $ = function (s) { return document.querySelector(s); };
@@ -294,7 +294,6 @@
         '<label class="row"><span class="gi">📝</span><input class="gin" id="f-det" autocomplete="off" placeholder="Detalle (opcional)" aria-label="Detalle" value="' + esc(F.detalle) + '"></label></div>';
       if (viajeActivo()) h += '<button class="cb' + (F.viaje !== false ? " on" : "") + '" data-a="viajeSw"><span class="box">' + (F.viaje !== false ? "✓" : "") + '</span><span style="flex:1">✈️ Es del viaje: ' + esc(viajeActivo().n) + '</span></button>';
       h += '<div id="puedo-w">' + puedoHtml() + '</div>';
-      h += '<button class="btn sec2 mini2" data-a="tplGuardar">⭐ Guardar como plantilla</button>';
     } else {
       h += '<div><label class="l" for="f-desc">Descripción</label><input class="field" id="f-desc" autocomplete="off" placeholder="Ej.: Primera Quincena" value="' + esc(F.desc) + '"><div class="chips">' +
         ["Primera Quincena", "Segunda Quincena", "Ingreso Extra"].map(function (x) { return '<button class="chip' + (F.desc === x ? " sel" : "") + '" data-a="desc" data-v="' + x + '">' + x + '</button>'; }).join("") + '</div></div>';
@@ -302,6 +301,7 @@
         ["Venta", "Bono", "Reembolso", "Regalo", "Préstamo devuelto"].map(function (x) { return '<button class="chip" data-a="extraDet" data-v="' + x + '">' + x + '</button>'; }).join("") + '</div></div>';
     }
     h += '<button class="btn" id="f-ok" data-a="guardar"' + (F.guardando ? " disabled" : "") + '>' + (F.guardando ? '<span class="spin"></span> Guardando…' : (F.modo === "gasto" ? "Guardar gasto" : "Guardar ingreso")) + '</button>';
+    if (F.modo === "gasto") h += '<button class="btn sec2 mini2" data-a="tplGuardar">⭐ Guardar como plantilla</button>';
     return h;
   }
   function catTxt() {
